@@ -9,6 +9,446 @@ import math
 # Adventure phase constants
 ADVENTURE_STEPS = ['Adventure Activity', 'Adventure Event', 'Adventure Action', 'Adventure Outcome']
 
+# ========== EVENT CHAIN SYSTEM ==========
+# Each chain is triggered by an Activity. It replaces the generic Event→Action→Outcome
+# with a tree of connected, context-specific wheels.
+# Structure:
+#   "steps": ordered list of wheel nodes
+#   Each step: id, label, options (list of choices)
+#   Each option: name, weight, desc, stat_weight (stat→multiplier), skill_bonus (skill→mult),
+#                requires_condition, blocked_by_condition, effects, next (step id or None=end)
+#   "on_complete": effects applied at chain end
+
+EVENT_CHAINS = {
+    # ---- FORGE LEGENDARY GEAR ----
+    "Forge Legendary Gear": {
+        "steps": [
+            {
+                "id": "choose_item",
+                "label": "Elige que forjar",
+                "options": [
+                    {"name": "Espada Encantada", "weight": 5, "desc": "Una espada imbuida de poder.",
+                     "stat_weight": {"Strength": 1.3}, "skill_bonus": {"Smithing": 2.0},
+                     "next": "forge_quality",
+                     "effects": {"_forge_item": "Espada Encantada"}},
+                    {"name": "Escudo de Obsidiana", "weight": 4, "desc": "Un escudo casi indestructible.",
+                     "stat_weight": {"Durability": 1.3}, "skill_bonus": {"Smithing": 2.0},
+                     "next": "forge_quality",
+                     "effects": {"_forge_item": "Escudo de Obsidiana"}},
+                    {"name": "Baston Arcano", "weight": 3, "desc": "Un baston que canaliza magia.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Alchemy": 1.5},
+                     "next": "forge_quality",
+                     "effects": {"_forge_item": "Baston Arcano"}},
+                    {"name": "Anillo de Proteccion", "weight": 3, "desc": "Un anillo con encantamientos defensivos.",
+                     "stat_weight": {"Intelligence": 1.2}, "skill_bonus": {"Smithing": 1.5},
+                     "next": "forge_quality",
+                     "effects": {"_forge_item": "Anillo de Proteccion"}},
+                    {"name": "Armadura de Dragonskin", "weight": 2, "desc": "Armadura hecha de escamas de dragon.",
+                     "stat_weight": {"Strength": 1.2, "Durability": 1.2}, "skill_bonus": {"Smithing": 2.5},
+                     "next": "forge_quality",
+                     "effects": {"_forge_item": "Armadura de Dragonskin"}}
+                ]
+            },
+            {
+                "id": "forge_quality",
+                "label": "Resultado de la Forja",
+                "stat_check": "Intelligence",
+                "options": [
+                    {"name": "Obra Maestra", "weight": 2, "desc": "Has superado toda expectativa. +2 a stat principal.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "add_item": True, "rep": {"Merchant Guild": 2}}},
+                    {"name": "Buena Calidad", "weight": 4, "desc": "Un trabajo solido. +1 a stat principal.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "add_item": True}},
+                    {"name": "Calidad Mediocre", "weight": 5, "desc": "Funcional pero sin brillo.",
+                     "success_tier": "low",
+                     "effects": {"add_item": True}},
+                    {"name": "Fallo Catastrofico", "weight": 2, "desc": "La forja explota. Pierdes materiales y te hieres.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "rep": {"Merchant Guild": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- PIRATE BLOCKADE ----
+    "Pirate Blockade": {
+        "steps": [
+            {
+                "id": "approach",
+                "label": "Enfrentar el Bloqueo Pirata",
+                "options": [
+                    {"name": "Negociar con los Piratas", "weight": 5, "desc": "Intentas dialogar y llegar a un acuerdo.",
+                     "stat_weight": {"Charisma": 1.6}, "skill_bonus": {"Persuasion": 2.0},
+                     "next": "negotiate_result"},
+                    {"name": "Atacar la Flota", "weight": 4, "desc": "Lanzas un asalto directo.",
+                     "stat_weight": {"Strength": 1.5, "Agility": 1.2},
+                     "next": "combat_result"},
+                    {"name": "Infiltracion Nocturna", "weight": 4, "desc": "Te infiltras de noche para sabotear.",
+                     "stat_weight": {"Agility": 1.5}, "skill_bonus": {"Stealth": 2.0},
+                     "next": "stealth_result"},
+                    {"name": "Pagar Tributo", "weight": 5, "desc": "Pagas para que levanten el bloqueo.",
+                     "stat_weight": {"Charisma": 1.1},
+                     "next": "tribute_result"},
+                    {"name": "Magia Naval", "weight": 2, "desc": "Usas magia para destruir o desviar la flota.",
+                     "stat_weight": {"Intelligence": 1.8},
+                     "requires_magic": True,
+                     "next": "magic_result"}
+                ]
+            },
+            {
+                "id": "negotiate_result",
+                "label": "Resultado de la Negociacion",
+                "stat_check": "Charisma",
+                "options": [
+                    {"name": "Acuerdo Comercial", "weight": 3, "desc": "Los piratas aceptan un pacto. Comercio restaurado.",
+                     "success_tier": "high",
+                     "effects": {"remove_condition": "trade_blocked", "rep": {"Merchant Guild": 3, "Thieves Guild": 1}}},
+                    {"name": "Tregua Temporal", "weight": 5, "desc": "Aceptan pausar el bloqueo, pero volvera.",
+                     "success_tier": "mid",
+                     "effects": {"remove_condition": "trade_blocked", "add_condition": "pirate_truce", "rep": {"Merchant Guild": 1}}},
+                    {"name": "Rechazan Negociar", "weight": 4, "desc": "Los piratas se rien de tu propuesta.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "trade_blocked", "rep": {"Merchant Guild": -1}}}
+                ]
+            },
+            {
+                "id": "combat_result",
+                "label": "Resultado del Combate Naval",
+                "stat_check": "Strength",
+                "options": [
+                    {"name": "Victoria Aplastante", "weight": 2, "desc": "Destruyes la flota pirata.",
+                     "success_tier": "high",
+                     "effects": {"remove_condition": "trade_blocked", "stat_boost": 1, "rep": {"Hunters Lodge": 2, "The Crown": 2}}},
+                    {"name": "Victoria Ajustada", "weight": 4, "desc": "Ganas pero con heridas.",
+                     "success_tier": "mid",
+                     "effects": {"remove_condition": "trade_blocked", "stat_damage": 1, "rep": {"Hunters Lodge": 1}}},
+                    {"name": "Derrota", "weight": 4, "desc": "Los piratas te repelen con fuerza.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "trade_blocked", "stat_damage": 2, "rep": {"Hunters Lodge": -1}}}
+                ]
+            },
+            {
+                "id": "stealth_result",
+                "label": "Resultado de la Infiltracion",
+                "stat_check": "Agility",
+                "options": [
+                    {"name": "Sabotaje Perfecto", "weight": 3, "desc": "Hundes sus barcos sin ser visto.",
+                     "success_tier": "high",
+                     "effects": {"remove_condition": "trade_blocked", "rep": {"Thieves Guild": 2}}},
+                    {"name": "Parcialmente Exitoso", "weight": 4, "desc": "Dañas algunos barcos pero te detectan.",
+                     "success_tier": "mid",
+                     "effects": {"remove_condition": "trade_blocked", "rep": {"Thieves Guild": 1}}},
+                    {"name": "Descubierto", "weight": 4, "desc": "Te atrapan. Situacion comprometida.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "trade_blocked", "stat_damage": 1}}
+                ]
+            },
+            {
+                "id": "tribute_result",
+                "label": "Resultado del Pago",
+                "options": [
+                    {"name": "Aceptan el Tributo", "weight": 6, "desc": "Los piratas levantan el bloqueo... por ahora.",
+                     "effects": {"remove_condition": "trade_blocked", "lose_wealth": True, "add_condition": "pirate_truce"}},
+                    {"name": "Exigen Mas", "weight": 3, "desc": "No es suficiente. Quieren el doble.",
+                     "effects": {"add_condition": "trade_blocked", "lose_wealth": True, "rep": {"Merchant Guild": -1}}}
+                ]
+            },
+            {
+                "id": "magic_result",
+                "label": "Resultado de la Magia Naval",
+                "stat_check": "Intelligence",
+                "options": [
+                    {"name": "Tormenta Arcana", "weight": 3, "desc": "Invocas una tormenta que destroza la flota.",
+                     "success_tier": "high",
+                     "effects": {"remove_condition": "trade_blocked", "rep": {"Mages Circle": 2}, "stat_boost": 1}},
+                    {"name": "Niebla Mistica", "weight": 4, "desc": "La niebla dispersa a los piratas temporalmente.",
+                     "success_tier": "mid",
+                     "effects": {"remove_condition": "trade_blocked", "add_condition": "pirate_truce"}},
+                    {"name": "Contrahechizo", "weight": 3, "desc": "Los piratas tienen un mago que te contrarresta.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "trade_blocked", "stat_damage": 1, "rep": {"Mages Circle": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- HUNT A BEAST ----
+    "Hunt a Beast": {
+        "steps": [
+            {
+                "id": "choose_prey",
+                "label": "Elige tu Presa",
+                "options": [
+                    {"name": "Manada de Lobos", "weight": 6, "desc": "Lobos gigantes asolando aldeas.",
+                     "stat_weight": {"Strength": 1.2}, "skill_bonus": {"Tracking": 1.5},
+                     "next": "hunt_method", "effects": {"_prey": "Manada de Lobos", "_prey_difficulty": 3}},
+                    {"name": "Troll de las Montanas", "weight": 4, "desc": "Un troll aterroriza los caminos.",
+                     "stat_weight": {"Strength": 1.4, "Durability": 1.3},
+                     "next": "hunt_method", "effects": {"_prey": "Troll de las Montanas", "_prey_difficulty": 5}},
+                    {"name": "Cria de Dragon", "weight": 2, "desc": "Una cria de dragon cerca de las minas.",
+                     "stat_weight": {"Strength": 1.5, "Intelligence": 1.3},
+                     "next": "hunt_method", "effects": {"_prey": "Cria de Dragon", "_prey_difficulty": 7}},
+                    {"name": "Criatura Sombria", "weight": 3, "desc": "Un ser de sombra acecha de noche.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Tracking": 1.3},
+                     "next": "hunt_method", "effects": {"_prey": "Criatura Sombria", "_prey_difficulty": 6}},
+                    {"name": "Quimera", "weight": 1, "desc": "La bestia legendaria de tres cabezas.",
+                     "stat_weight": {"Strength": 1.5, "Agility": 1.3, "Durability": 1.3},
+                     "next": "hunt_method", "effects": {"_prey": "Quimera", "_prey_difficulty": 9}}
+                ]
+            },
+            {
+                "id": "hunt_method",
+                "label": "Metodo de Caza",
+                "options": [
+                    {"name": "Rastrear y Emboscar", "weight": 5, "desc": "Sigues su rastro y tiendes una emboscada.",
+                     "stat_weight": {"Agility": 1.4}, "skill_bonus": {"Tracking": 2.0, "Stealth": 1.5},
+                     "next": "hunt_result"},
+                    {"name": "Combate Directo", "weight": 5, "desc": "La enfrentas cara a cara.",
+                     "stat_weight": {"Strength": 1.6, "Durability": 1.3},
+                     "next": "hunt_result"},
+                    {"name": "Trampas", "weight": 4, "desc": "Preparas trampas en su territorio.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Trap Setting": 2.5},
+                     "next": "hunt_result"},
+                    {"name": "Atraer con Cebo", "weight": 3, "desc": "Usas un cebo para atraerla a tu terreno.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Beast Taming": 1.5},
+                     "next": "hunt_result"}
+                ]
+            },
+            {
+                "id": "hunt_result",
+                "label": "Resultado de la Caceria",
+                "stat_check": "Strength",
+                "difficulty_key": "_prey_difficulty",
+                "options": [
+                    {"name": "Caza Gloriosa", "weight": 3, "desc": "Abates a la bestia con maestria. Trofeo legendario.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "add_item_from": "_prey", "rep": {"Hunters Lodge": 3}}},
+                    {"name": "Caza Exitosa", "weight": 5, "desc": "La bestia cae, pero no sin lucha.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"Hunters Lodge": 1}, "add_item_from": "_prey"}},
+                    {"name": "La Bestia Escapa", "weight": 4, "desc": "No logras atraparla. Regresara mas fuerte.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "beast_stalking"}},
+                    {"name": "Herido Gravemente", "weight": 2, "desc": "La bestia te ataca y te hiere de gravedad.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "wounded"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- EXPLORE RUINS ----
+    "Explore Ruins": {
+        "steps": [
+            {
+                "id": "choose_depth",
+                "label": "Profundidad de Exploracion",
+                "options": [
+                    {"name": "Superficie", "weight": 6, "desc": "Exploras las zonas accesibles y seguras.",
+                     "next": "surface_find", "effects": {"_ruin_depth": 1}},
+                    {"name": "Profundidades", "weight": 4, "desc": "Desciendes a las camaras selladas.",
+                     "stat_weight": {"Agility": 1.2}, "skill_bonus": {"Lockpicking": 1.5},
+                     "next": "deep_find", "effects": {"_ruin_depth": 2}},
+                    {"name": "El Abismo", "weight": 2, "desc": "Bajas donde nadie ha regresado con vida.",
+                     "stat_weight": {"Durability": 1.4, "Intelligence": 1.3},
+                     "next": "abyss_find", "effects": {"_ruin_depth": 3}}
+                ]
+            },
+            {
+                "id": "surface_find",
+                "label": "Hallazgo en Superficie",
+                "options": [
+                    {"name": "Cofre de Monedas", "weight": 5, "desc": "Un cofre con riquezas modestas.",
+                     "effects": {"gain_wealth": True, "rep": {"Merchant Guild": 1}}},
+                    {"name": "Mapa Antiguo", "weight": 4, "desc": "Un mapa que revela ruinas mas profundas.",
+                     "effects": {"add_condition": "ancient_map"}},
+                    {"name": "Trampa!", "weight": 3, "desc": "Activas una trampa oculta.",
+                     "stat_check_inline": "Agility",
+                     "effects": {"stat_damage": 1}},
+                    {"name": "Nada Util", "weight": 4, "desc": "Solo polvo y escombros."}
+                ]
+            },
+            {
+                "id": "deep_find",
+                "label": "Hallazgo en Profundidades",
+                "options": [
+                    {"name": "Artefacto Magico", "weight": 3, "desc": "Un objeto antiguo vibrando con poder.",
+                     "effects": {"add_random_item": True, "stat_boost": 1, "rep": {"Mages Circle": 1}}},
+                    {"name": "Criatura Guardianda", "weight": 4, "desc": "Un guardian ancestral te ataca.",
+                     "stat_check_inline": "Strength",
+                     "next": "guardian_fight"},
+                    {"name": "Biblioteca Oculta", "weight": 3, "desc": "Textos antiguos con conocimiento prohibido.",
+                     "effects": {"stat_boost_specific": "Intelligence", "rep": {"Mages Circle": 2}}},
+                    {"name": "Maldicion Activada", "weight": 3, "desc": "Algo oscuro despierta al entrar.",
+                     "effects": {"add_condition": "cursed", "stat_damage": 1}}
+                ]
+            },
+            {
+                "id": "abyss_find",
+                "label": "Hallazgo en el Abismo",
+                "options": [
+                    {"name": "Reliquia Legendaria", "weight": 2, "desc": "Un artefacto de poder inmenso. +3 stat.",
+                     "effects": {"stat_boost": 3, "add_random_item": True, "rep": {"Mages Circle": 3}}},
+                    {"name": "Portal Dimensional", "weight": 2, "desc": "Un portal a otra dimension se abre.",
+                     "effects": {"add_condition": "dimensional_rift"}},
+                    {"name": "Horror Primordial", "weight": 4, "desc": "Algo terrible despierta.",
+                     "stat_check_inline": "Durability",
+                     "effects": {"stat_damage": 3, "add_condition": "horror_survivor"}},
+                    {"name": "Muerte Instantanea", "weight": 2, "desc": "El abismo te consume.",
+                     "effects": {"terminal": "death"}}
+                ]
+            },
+            {
+                "id": "guardian_fight",
+                "label": "Combate contra el Guardian",
+                "stat_check": "Strength",
+                "options": [
+                    {"name": "Derrotas al Guardian", "weight": 4, "desc": "Vences y reclamas su tesoro.",
+                     "success_tier": "high",
+                     "effects": {"add_random_item": True, "stat_boost": 1, "rep": {"Hunters Lodge": 2}}},
+                    {"name": "Victoria Pirrica", "weight": 4, "desc": "Ganas pero malherido.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True, "stat_damage": 1}},
+                    {"name": "Huyes", "weight": 3, "desc": "Escapas por los pelos.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1}}
+                ]
+            }
+        ]
+    },
+
+    # ---- NEGOTIATE A TRADE ----
+    "Negotiate a Trade": {
+        "blocked_by": "trade_blocked",
+        "blocked_message": "El comercio esta bloqueado por piratas. No puedes comerciar ahora.",
+        "steps": [
+            {
+                "id": "choose_goods",
+                "label": "Tipo de Mercancia",
+                "options": [
+                    {"name": "Armas y Armaduras", "weight": 5, "desc": "Equipo militar de calidad.",
+                     "stat_weight": {"Strength": 1.2}, "skill_bonus": {"Smithing": 1.5},
+                     "next": "haggle", "effects": {"_trade_type": "weapons"}},
+                    {"name": "Objetos Magicos", "weight": 3, "desc": "Artefactos y componentes arcanos.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "haggle", "effects": {"_trade_type": "magic"}},
+                    {"name": "Informacion", "weight": 4, "desc": "Secretos, mapas, y contactos.",
+                     "stat_weight": {"Charisma": 1.3}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "haggle", "effects": {"_trade_type": "info"}},
+                    {"name": "Materiales Raros", "weight": 4, "desc": "Componentes para forja y alquimia.",
+                     "skill_bonus": {"Alchemy": 1.5, "Smithing": 1.3},
+                     "next": "haggle", "effects": {"_trade_type": "materials"}}
+                ]
+            },
+            {
+                "id": "haggle",
+                "label": "Negociacion del Precio",
+                "stat_check": "Charisma",
+                "options": [
+                    {"name": "Ganga Increible", "weight": 2, "desc": "Consigues un trato excepcional.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "add_random_item": True, "rep": {"Merchant Guild": 2}}},
+                    {"name": "Buen Trato", "weight": 5, "desc": "Un intercambio justo y beneficioso.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True, "rep": {"Merchant Guild": 1}}},
+                    {"name": "Precio Justo", "weight": 5, "desc": "Pagas lo que vale, sin mas.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True}},
+                    {"name": "Te Estafan", "weight": 3, "desc": "El vendedor te engaña vilmente.",
+                     "success_tier": "low",
+                     "effects": {"lose_wealth": True, "rep": {"Merchant Guild": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- INVESTIGATE A MYSTERY ----
+    "Investigate a Mystery": {
+        "steps": [
+            {
+                "id": "choose_approach",
+                "label": "Metodo de Investigacion",
+                "options": [
+                    {"name": "Interrogar Testigos", "weight": 5, "desc": "Hablas con quienes vieron algo.",
+                     "stat_weight": {"Charisma": 1.5}, "skill_bonus": {"Persuasion": 1.5, "Intimidation": 1.3},
+                     "next": "investigate_result"},
+                    {"name": "Buscar Pistas Fisicas", "weight": 5, "desc": "Examinas la escena del crimen.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Investigation": 2.0},
+                     "next": "investigate_result"},
+                    {"name": "Consultar Archivos", "weight": 4, "desc": "Revisas registros y documentos.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "investigate_result"},
+                    {"name": "Espionaje Nocturno", "weight": 3, "desc": "Vigilas a los sospechosos de noche.",
+                     "stat_weight": {"Agility": 1.4}, "skill_bonus": {"Stealth": 2.0},
+                     "next": "investigate_result"}
+                ]
+            },
+            {
+                "id": "investigate_result",
+                "label": "Resultado de la Investigacion",
+                "stat_check": "Intelligence",
+                "options": [
+                    {"name": "Caso Resuelto!", "weight": 3, "desc": "Descubres la verdad y al culpable.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Intelligence", "rep": {"The Crown": 2}, "gain_wealth": True}},
+                    {"name": "Pista Importante", "weight": 5, "desc": "No resuelves todo, pero avanzas mucho.",
+                     "success_tier": "mid",
+                     "effects": {"add_condition": "clue_found", "rep": {"The Crown": 1}}},
+                    {"name": "Callejon Sin Salida", "weight": 4, "desc": "Las pistas no llevan a nada concreto.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Descubierto por el Culpable", "weight": 2, "desc": "El criminal sabe que lo investigas.",
+                     "success_tier": "fail",
+                     "effects": {"add_condition": "enemy_alerted", "stat_damage": 1}}
+                ]
+            }
+        ]
+    },
+
+    # ---- HEAL THE SICK ----
+    "Heal the Sick": {
+        "steps": [
+            {
+                "id": "diagnose",
+                "label": "Diagnostico",
+                "options": [
+                    {"name": "Plaga Comun", "weight": 5, "desc": "Una enfermedad conocida pero grave.",
+                     "stat_weight": {"Intelligence": 1.2}, "skill_bonus": {"Medicine": 1.5},
+                     "next": "treatment", "effects": {"_disease": "common", "_cure_difficulty": 3}},
+                    {"name": "Maldicion Arcana", "weight": 3, "desc": "No es enfermedad, es magia oscura.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "requires_magic": True,
+                     "next": "treatment", "effects": {"_disease": "curse", "_cure_difficulty": 6}},
+                    {"name": "Veneno Raro", "weight": 4, "desc": "Han sido envenenados intencionalmente.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Alchemy": 2.0},
+                     "next": "treatment", "effects": {"_disease": "poison", "_cure_difficulty": 4}}
+                ]
+            },
+            {
+                "id": "treatment",
+                "label": "Tratamiento",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_cure_difficulty",
+                "options": [
+                    {"name": "Cura Milagrosa", "weight": 3, "desc": "Todos se salvan. Eres un heroe.",
+                     "success_tier": "high",
+                     "effects": {"rep": {"Church of Light": 3}, "stat_boost_specific": "Charisma"}},
+                    {"name": "Mayoria Salvados", "weight": 5, "desc": "Salvas a la mayoria de los afectados.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"Church of Light": 1}}},
+                    {"name": "Pocos Sobreviven", "weight": 4, "desc": "A pesar de tu esfuerzo, muchos mueren.",
+                     "success_tier": "low",
+                     "effects": {"rep": {"Church of Light": -1}}},
+                    {"name": "Contagiado", "weight": 2, "desc": "Tu mismo caes enfermo.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "sick"}}
+                ]
+            }
+        ]
+    }
+}
+
 # Decision definitions for adventure events
 ADVENTURE_DECISIONS = {
     "Cult Whisper": {
@@ -301,6 +741,14 @@ def main():
     reputation = {}  # faction_name: score
     adventure_log = []  # chapter summaries
     decision_mods = {}  # temporary tag mods from decisions
+    conditions = set()  # persistent world conditions (e.g. "trade_blocked")
+    chain_state = {
+        'active': False,     # is a chain currently running?
+        'chain_name': None,  # name of the chain (key in EVENT_CHAINS)
+        'step_id': None,     # current step id within the chain
+        'choices': {},       # choices made during this chain: step_id -> option name
+        'temp_vars': {},     # temp variables (_forge_item, _prey, etc.)
+    }
 
     def build_wheel_data(wheel_name):
         """Build wheel segments"""
@@ -722,10 +1170,21 @@ def main():
                         tag_weights[tag] = max(tag_weights.get(tag, 1.0), 1 + score * 0.1)
 
             for i, item in enumerate(items):
+                # Check if this activity is blocked by a condition
+                chain_def = EVENT_CHAINS.get(item['name'])
+                if chain_def and chain_def.get('blocked_by'):
+                    if chain_def['blocked_by'] in conditions:
+                        continue  # skip blocked activities
+
                 weight = apply_tag_weights(item, tag_weights)
                 for tag in item.get('tags', []):
                     if tag in decision_mods:
                         weight *= decision_mods[tag]
+
+                # Boost activities that have chains (more interesting)
+                if item['name'] in EVENT_CHAINS:
+                    weight *= 1.3
+
                 segments.append({
                     'name': item['name'],
                     'weight': weight,
@@ -744,10 +1203,21 @@ def main():
                         tag_weights[tag] = max(tag_weights.get(tag, 1.0), 1 + score * 0.1)
 
             for i, item in enumerate(items):
+                # Check if this event is blocked by a condition
+                chain_def = EVENT_CHAINS.get(item['name'])
+                if chain_def and chain_def.get('blocked_by'):
+                    if chain_def['blocked_by'] in conditions:
+                        continue
+
                 weight = apply_tag_weights(item, tag_weights)
                 for tag in item.get('tags', []):
                     if tag in decision_mods:
                         weight *= decision_mods[tag]
+
+                # Boost events that have chains
+                if item['name'] in EVENT_CHAINS:
+                    weight *= 1.3
+
                 segments.append({
                     'name': item['name'],
                     'weight': weight,
@@ -1285,6 +1755,11 @@ def main():
 
     def show_adventure_wheel():
         """Display current adventure wheel"""
+        # If a chain is active, show the chain wheel instead
+        if chain_state['active']:
+            show_chain_wheel()
+            return
+
         wheel_name = get_adventure_wheel_name()
         step = adventure_phase['step']
         chapter = adventure_phase['chapter']
@@ -1305,12 +1780,24 @@ def main():
 
         state.selections[wheel_key] = selected_name
 
+        # After Activity step (step 0): check if this triggers a chain
+        if step == 0:
+            if selected_name in EVENT_CHAINS:
+                update_char_display()
+                start_chain(selected_name)
+                return
+
         # After event step, check for decisions
         if step == 1:  # Event
             if selected_name in ADVENTURE_DECISIONS:
                 update_char_display()
                 show_decision_popup(selected_name)
                 return  # Decision popup will advance the adventure
+            # Events can also trigger chains
+            if selected_name in EVENT_CHAINS:
+                update_char_display()
+                start_chain(selected_name)
+                return
 
         # After outcome step, process chapter end
         if step == 3:  # Outcome
@@ -1454,6 +1941,325 @@ def main():
 
         current_lbl.config(text=title)
 
+    # ===== CHAIN SYSTEM HELPERS =====
+
+    def get_chain_step(chain_name, step_id):
+        """Get a specific step from a chain by its id"""
+        chain = EVENT_CHAINS.get(chain_name)
+        if not chain:
+            return None
+        for step in chain['steps']:
+            if step['id'] == step_id:
+                return step
+        return None
+
+    def build_chain_wheel_segments(chain_name, step_id):
+        """Build wheel segments for a specific chain step"""
+        step = get_chain_step(chain_name, step_id)
+        if not step:
+            return []
+
+        segments = []
+        stat_check = step.get('stat_check')
+        # If step has a difficulty key, get it from temp_vars
+        difficulty = 5  # default
+        diff_key = step.get('difficulty_key')
+        if diff_key and diff_key in chain_state['temp_vars']:
+            difficulty = chain_state['temp_vars'][diff_key]
+
+        for i, opt in enumerate(step['options']):
+            weight = opt.get('weight', 5)
+
+            # Check requires_magic
+            if opt.get('requires_magic'):
+                magic_count_str = state.selections.get('Magic Count', '0 (None)')
+                try:
+                    mc = int(magic_count_str.split()[0])
+                except:
+                    mc = 0
+                if mc == 0:
+                    continue  # skip option if no magic
+
+            # Check requires_condition
+            req_cond = opt.get('requires_condition')
+            if req_cond and req_cond not in conditions:
+                continue
+
+            # Check blocked_by_condition
+            block_cond = opt.get('blocked_by_condition')
+            if block_cond and block_cond in conditions:
+                continue
+
+            # Apply stat_weight: multiply weight by (stat_value / 5)
+            for stat_name, multiplier in opt.get('stat_weight', {}).items():
+                stat_val = get_stat_value(stat_name)
+                weight *= (stat_val / 5.0) * multiplier
+
+            # Apply skill_bonus: if character has that skill, multiply weight
+            for skill_name, multiplier in opt.get('skill_bonus', {}).items():
+                has_skill = False
+                for key, val in state.selections.items():
+                    if key.startswith('Skill ') and not key.startswith('Skill Count') and not key.startswith('Skill Mastery') and not key.startswith('Skill Efficiency'):
+                        if val == skill_name:
+                            has_skill = True
+                            break
+                if has_skill:
+                    weight *= multiplier
+
+            # Apply power bonuses
+            for key, val in state.selections.items():
+                if key.startswith('Power ') and not key.startswith('Power Count') and not key.startswith('Power Mastery'):
+                    pname = val.lower()
+                    opt_name = opt['name'].lower()
+                    if 'shadow' in pname and ('infiltra' in opt_name or 'sigilo' in opt_name or 'nocturna' in opt_name):
+                        weight *= 1.4
+
+            # For stat-checked results, modify by stat and difficulty
+            if stat_check and opt.get('success_tier'):
+                check_val = get_stat_value(stat_check)
+                tier = opt['success_tier']
+                ratio = check_val / max(1, difficulty)
+
+                if tier == 'high':
+                    weight *= max(0.3, ratio * 1.5)
+                elif tier == 'mid':
+                    weight *= max(0.5, 0.8 + ratio * 0.3)
+                elif tier == 'low':
+                    weight *= max(0.3, 1.5 - ratio * 0.5)
+                elif tier == 'fail':
+                    weight *= max(0.2, 1.8 - ratio * 0.8)
+
+            # Inline stat check (for options that are partially stat-dependent)
+            inline_check = opt.get('stat_check_inline')
+            if inline_check:
+                check_val = get_stat_value(inline_check)
+                if check_val >= 7:
+                    weight *= 0.5  # less likely to be bad if high stat
+                elif check_val <= 3:
+                    weight *= 1.5  # more likely to be bad if low stat
+
+            weight = max(0.1, weight)
+            segments.append({
+                'name': opt['name'],
+                'weight': weight,
+                'color': get_color(i, len(step['options'])),
+                'desc': opt.get('desc', opt['name']),
+                '_option_data': opt  # stash full option data for later
+            })
+
+        return segments
+
+    def start_chain(chain_name):
+        """Start an event chain"""
+        chain = EVENT_CHAINS.get(chain_name)
+        if not chain:
+            return False
+
+        # Check if chain is blocked by condition
+        blocked_by = chain.get('blocked_by')
+        if blocked_by and blocked_by in conditions:
+            msg = chain.get('blocked_message', f'Esta accion esta bloqueada ({blocked_by}).')
+            messagebox.showinfo('Bloqueado', msg)
+            # Fall back to generic adventure
+            advance_adventure()
+            return True
+
+        chain_state['active'] = True
+        chain_state['chain_name'] = chain_name
+        chain_state['step_id'] = chain['steps'][0]['id']
+        chain_state['choices'] = {}
+        chain_state['temp_vars'] = {}
+        show_chain_wheel()
+        return True
+
+    def show_chain_wheel():
+        """Display current chain step wheel"""
+        chain_name = chain_state['chain_name']
+        step_id = chain_state['step_id']
+        step = get_chain_step(chain_name, step_id)
+
+        if not step:
+            end_chain()
+            return
+
+        chapter = adventure_phase['chapter']
+        current_lbl.config(text=f'Cap. {chapter} - {step["label"]}')
+
+        segments = build_chain_wheel_segments(chain_name, step_id)
+        if segments:
+            draw_wheel(segments, 0)
+            spinning['rotation'] = 0
+        else:
+            # No valid options, skip
+            end_chain()
+
+    def handle_chain_result(selected_name):
+        """Handle the result of spinning a chain wheel"""
+        chain_name = chain_state['chain_name']
+        step_id = chain_state['step_id']
+        step = get_chain_step(chain_name, step_id)
+
+        if not step:
+            end_chain()
+            return
+
+        # Find the selected option
+        selected_opt = None
+        for opt in step['options']:
+            if opt['name'] == selected_name:
+                selected_opt = opt
+                break
+
+        if not selected_opt:
+            end_chain()
+            return
+
+        # Store choice
+        chain_state['choices'][step_id] = selected_name
+
+        # Apply immediate effects from the option
+        effects = selected_opt.get('effects', {})
+        apply_chain_effects(effects)
+
+        # Store temp vars (keys starting with _)
+        for k, v in effects.items():
+            if k.startswith('_'):
+                chain_state['temp_vars'][k] = v
+
+        # Store in state.selections for display
+        chapter = adventure_phase['chapter']
+        sel_key = f'{step["label"]} (Cap.{chapter})'
+        state.selections[sel_key] = selected_name
+        update_char_display()
+
+        # Check for terminal death
+        if effects.get('terminal') == 'death':
+            end_run('death', selected_opt.get('desc', selected_name))
+            return
+
+        # Move to next step
+        next_id = selected_opt.get('next')
+        if next_id:
+            chain_state['step_id'] = next_id
+            show_chain_wheel()
+        else:
+            # Chain complete
+            end_chain()
+
+    def apply_chain_effects(effects):
+        """Apply effects from a chain option"""
+        chapter = adventure_phase['chapter']
+
+        # Stat boost (to a random relevant stat)
+        stat_boost = effects.get('stat_boost', 0)
+        if stat_boost > 0:
+            stats = ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']
+            stat = random.choice(stats)
+            old_val = get_stat_value(stat)
+            new_val = min(10, old_val + stat_boost)
+            # Find the label for the new value
+            stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
+                          5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
+                          9: 'Superhuman', 10: 'Legendary'}
+            state.selections[stat] = f'{new_val} ({stat_labels.get(new_val, "Good")})'
+
+        # Stat boost to specific stat
+        stat_spec = effects.get('stat_boost_specific')
+        if stat_spec:
+            old_val = get_stat_value(stat_spec)
+            new_val = min(10, old_val + 1)
+            stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
+                          5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
+                          9: 'Superhuman', 10: 'Legendary'}
+            state.selections[stat_spec] = f'{new_val} ({stat_labels.get(new_val, "Good")})'
+
+        # Stat damage (to a random stat)
+        stat_dmg = effects.get('stat_damage', 0)
+        if stat_dmg > 0:
+            stats = ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']
+            stat = random.choice(stats)
+            old_val = get_stat_value(stat)
+            new_val = max(1, old_val - stat_dmg)
+            stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
+                          5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
+                          9: 'Superhuman', 10: 'Legendary'}
+            state.selections[stat] = f'{new_val} ({stat_labels.get(new_val, "Good")})'
+
+        # Add condition
+        cond = effects.get('add_condition')
+        if cond:
+            conditions.add(cond)
+
+        # Remove condition
+        rm_cond = effects.get('remove_condition')
+        if rm_cond and rm_cond in conditions:
+            conditions.discard(rm_cond)
+
+        # Add random item
+        if effects.get('add_random_item'):
+            objects = data.get('objects', [])
+            if objects:
+                item = random.choice(objects)
+                # Find next available item slot
+                item_idx = 1
+                while f'Item {item_idx}' in state.selections:
+                    item_idx += 1
+                state.selections[f'Item {item_idx}'] = item['name']
+
+        # Add item from prey/forge (named item)
+        if effects.get('add_item'):
+            forge_item = chain_state['temp_vars'].get('_forge_item', 'Artefacto')
+            item_idx = 1
+            while f'Item {item_idx}' in state.selections:
+                item_idx += 1
+            state.selections[f'Item {item_idx}'] = forge_item
+
+        if effects.get('add_item_from'):
+            source_key = effects['add_item_from']
+            source_name = chain_state['temp_vars'].get(source_key, 'Trofeo')
+            trophy_name = f'Trofeo: {source_name}'
+            item_idx = 1
+            while f'Item {item_idx}' in state.selections:
+                item_idx += 1
+            state.selections[f'Item {item_idx}'] = trophy_name
+
+        # Wealth changes
+        if effects.get('gain_wealth'):
+            adventure_log.append(f'  [+] Riqueza obtenida')
+        if effects.get('lose_wealth'):
+            adventure_log.append(f'  [-] Riqueza perdida')
+
+        # Reputation changes
+        for faction, change in effects.get('rep', {}).items():
+            if faction not in reputation:
+                reputation[faction] = 0
+            reputation[faction] += change
+
+    def end_chain():
+        """End the current chain and advance to next chapter"""
+        chapter = adventure_phase['chapter']
+        chain_name = chain_state['chain_name'] or '?'
+
+        # Build log entry from chain choices
+        choices_str = ' > '.join(chain_state['choices'].values())
+        adventure_log.append(f'Cap.{chapter}: {chain_name} > {choices_str}')
+
+        # Reset chain state
+        chain_state['active'] = False
+        chain_state['chain_name'] = None
+        chain_state['step_id'] = None
+        chain_state['choices'] = {}
+        chain_state['temp_vars'] = {}
+
+        # Clear decision mods
+        decision_mods.clear()
+        update_char_display()
+
+        # Advance chapter
+        adventure_phase['chapter'] += 1
+        adventure_phase['step'] = 0
+        show_adventure_wheel()
+
     # ===== END ADVENTURE HELPERS =====
 
     def draw_wheel(segments, rotation_angle=0.0):
@@ -1596,7 +2402,10 @@ def main():
     def on_spin_result(selected_name):
         """Handle spin result"""
         if adventure_phase['active']:
-            handle_adventure_result(selected_name)
+            if chain_state['active']:
+                handle_chain_result(selected_name)
+            else:
+                handle_adventure_result(selected_name)
             return
 
         # Character creation flow
@@ -1639,15 +2448,20 @@ def main():
         if spinning['active']:
             return
 
-        if adventure_phase['active']:
+        if adventure_phase['active'] and chain_state['active']:
+            # Build chain wheel segments
+            chain_name = chain_state['chain_name']
+            step_id = chain_state['step_id']
+            segments = build_chain_wheel_segments(chain_name, step_id)
+        elif adventure_phase['active']:
             wheel_name = get_adventure_wheel_name()
+            segments = build_wheel_data(wheel_name)
         else:
             current_wheel_config = get_current_wheel_config()
             if wheel_index['i'] >= len(current_wheel_config):
                 return
             wheel_name = current_wheel_config[wheel_index['i']]
-
-        segments = build_wheel_data(wheel_name)
+            segments = build_wheel_data(wheel_name)
 
         if not segments:
             messagebox.showwarning('Error', f'No hay opciones para {wheel_name}')
@@ -1669,6 +2483,55 @@ def main():
 
     spin_btn.config(command=spin_action)
     end_run_btn.config(command=lambda: end_run('manual'))
+
+    # === TEST MODE: Skip character creation ===
+    def skip_to_adventure():
+        """Pre-fill a test character and jump to adventure phase"""
+        test_char = {
+            'Race': 'Dark Elf',
+            'Gender': 'Male',
+            'Age': 'Young Adult (19-35)',
+            'Archetype': 'Rogue',
+            'Class': 'Assassin',
+            'Alignment': 'Chaotic Neutral',
+            'Strength': '6 (Excellent)',
+            'Agility': '8 (Outstanding)',
+            'Durability': '4 (Average)',
+            'Intelligence': '7 (Great)',
+            'Charisma': '5 (Good)',
+            'Weapon': 'Dagger',
+            'Weapon Mastery': 'Skilled',
+            'Power Count': '1 (Single)',
+            'Power 1': 'Shadow Step (innate)',
+            'Power Mastery 1': 'Advanced',
+            'Magic Count': '1 (Single)',
+            'Magic Type 1': 'Shadow',
+            'Spells 1': 'Shadow Veil',
+            'Magic Skill 1': 'Apprentice',
+            'Skill Count': '2 (Dual)',
+            'Skill 1': 'Stealth',
+            'Skill Mastery 1': 'Expert',
+            'Skill 2': 'Lockpicking',
+            'Skill Mastery 2': 'Novice',
+            'Skill Efficiency': 'Good (100%)',
+            'Territory': 'Human Slums',
+            'Items Count': '1 (Single)',
+            'Item 1': 'Venom Dagger',
+        }
+        for k, v in test_char.items():
+            state.selections[k] = v
+        # Load territory background
+        root.after(100, lambda: load_background_image('Human Slums'))
+        update_char_display()
+        start_adventure_phase()
+
+    skip_btn = tk.Button(main_container, text='TEST: SKIP', width=12, font=('Segoe UI', 9, 'bold'),
+                        bg='#444444', fg='#ffffff', activebackground='#666666',
+                        activeforeground='#ffffff', relief='raised', bd=2,
+                        command=skip_to_adventure)
+    main_container.create_window(1350, 870, window=skip_btn, tags='ui_element')
+    # === END TEST MODE ===
+
     show_current_wheel()
     update_char_display()
 
