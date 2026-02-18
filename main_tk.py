@@ -6,6 +6,32 @@ import os
 import random
 import math
 
+# Optional sound support (Windows)
+try:
+    import winsound
+except ImportError:
+    winsound = None
+
+
+def play_sound(name: str):
+    """Play a simple Windows beep if available"""
+    if not winsound:
+        return
+    try:
+        if name == 'spin':
+            winsound.MessageBeep(winsound.MB_ICONASTERISK)
+        elif name == 'stop':
+            winsound.MessageBeep(winsound.MB_OK)
+        elif name == 'prize':
+            # Short celebratory chirp
+            winsound.Beep(1046, 90)
+            winsound.Beep(1318, 90)
+    except Exception:
+        pass
+
+# Lightweight looping background cue state
+music_state = {'mood': None, 'timer': None}
+
 # Adventure phase constants
 ADVENTURE_STEPS = ['Adventure Activity', 'Adventure Event', 'Adventure Action', 'Adventure Outcome']
 
@@ -2100,6 +2126,8 @@ ADVENTURE_DECISIONS = {
 def main():
     data = load_data()
     state = GameState(data)
+    resources = {'gold': 50}
+    last_random_event = {'chapter': 0, 'name': None}
 
     # Create main window
     root = tk.Tk()
@@ -2164,20 +2192,42 @@ def main():
                      font=('Segoe UI', 26, 'bold'), fg='#eebc1d', bg='#000000')
     main_container.create_window(900, 50, window=title, tags='ui_element')
 
-    # Info panel
+    # Info panel with separate areas
     info_frame = tk.Frame(main_container, bg='#1a1a2e', relief='groove', bd=2)
     main_container.create_window(1350, 200, window=info_frame, tags='ui_element')
-    
-    tk.Label(info_frame, text='Personaje', font=('Segoe UI', 12, 'bold'), 
-             fg='#eebc1d', bg='#1a1a2e').pack(fill='x', padx=5, pady=5)
-    
-    char_text = scrolledtext.ScrolledText(info_frame, width=28, height=28, 
-                                         state='disabled', font=('Consolas', 8), 
-                                         bg='#0f3460', fg='#eebc1d', bd=0)
-    char_text.pack(fill='both', expand=True, padx=3, pady=3)
 
-    def update_char_display():
-        """Update character display"""
+    # Character panel
+    tk.Label(info_frame, text='Personaje', font=('Segoe UI', 12, 'bold'),
+             fg='#eebc1d', bg='#1a1a2e').pack(fill='x', padx=5, pady=4)
+    char_text = scrolledtext.ScrolledText(info_frame, width=28, height=12,
+                                         state='disabled', font=('Consolas', 8),
+                                         bg='#0f3460', fg='#eebc1d', bd=0)
+    char_text.pack(fill='x', padx=3, pady=(0,6))
+
+    # World/Status panel
+    tk.Label(info_frame, text='Estado del Mundo', font=('Segoe UI', 12, 'bold'),
+             fg='#eebc1d', bg='#1a1a2e').pack(fill='x', padx=5, pady=4)
+    world_text = scrolledtext.ScrolledText(info_frame, width=28, height=10,
+                                          state='disabled', font=('Consolas', 8),
+                                          bg='#0f3460', fg='#eebc1d', bd=0)
+    world_text.pack(fill='x', padx=3, pady=(0,6))
+
+    # Log panel
+    tk.Label(info_frame, text='Registro', font=('Segoe UI', 12, 'bold'),
+             fg='#eebc1d', bg='#1a1a2e').pack(fill='x', padx=5, pady=4)
+    log_text = scrolledtext.ScrolledText(info_frame, width=28, height=8,
+                                        state='disabled', font=('Consolas', 8),
+                                        bg='#0f3460', fg='#eebc1d', bd=0)
+    log_text.pack(fill='x', padx=3, pady=(0,6))
+
+    # Money label
+    money_var = tk.StringVar(value=f"Oro: {resources['gold']}")
+    money_lbl = tk.Label(main_container, textvariable=money_var,
+                         font=('Segoe UI', 12, 'bold'), fg='#eebc1d', bg='#000000')
+    main_container.create_window(900, 690, window=money_lbl, tags='ui_element')
+
+    def update_panels():
+        """Update character, world, and log panels"""
         char_text.config(state='normal')
         char_text.delete('1.0', tk.END)
         for key, val in state.selections.items():
@@ -2186,41 +2236,57 @@ def main():
                     char_text.insert(tk.END, f"{key}: {', '.join(val)}\n")
                 else:
                     char_text.insert(tk.END, f"{key}: {val}\n")
-
-        # Show reputation during adventure
-        if adventure_phase['active'] and any(v != 0 for v in reputation.values()):
-            char_text.insert(tk.END, '\n--- REPUTACION ---\n')
-            for faction, score in reputation.items():
-                if score != 0:
-                    bar = '|' * abs(score)
-                    symbol = '+' if score > 0 else '-'
-                    char_text.insert(tk.END, f"{faction}: {symbol}{abs(score)} {bar}\n")
-
-        # Show adventure log
-        if adventure_log:
-            char_text.insert(tk.END, '\n--- AVENTURA ---\n')
-            for entry in adventure_log[-5:]:  # Show last 5 entries
-                char_text.insert(tk.END, f"{entry}\n")
-
-        # Show active conditions
-        if conditions:
-            char_text.insert(tk.END, '\n--- ESTADO DEL MUNDO ---\n')
-            for cond in sorted(conditions):
-                desc = CONDITION_DESCRIPTIONS.get(cond, cond.replace('_', ' ').title())
-                char_text.insert(tk.END, f"  * {desc}\n")
-
-        # Show earned titles
-        if titles:
-            char_text.insert(tk.END, '\n--- TITULOS ---\n')
-            for title in titles:
-                char_text.insert(tk.END, f"  * {title}\n")
-
         char_text.config(state='disabled')
 
-    # Current wheel label
+        world_text.config(state='normal')
+        world_text.delete('1.0', tk.END)
+        # Location
+        world_text.insert(tk.END, f"Lugar: {current_location['territory']}\n")
+        if current_location['sublocation']:
+            world_text.insert(tk.END, f" - {current_location['sublocation']}\n")
+        # Money
+        world_text.insert(tk.END, f"Oro: {resources['gold']}\n")
+        # Reputation
+        if adventure_phase['active'] and any(v != 0 for v in reputation.values()):
+            world_text.insert(tk.END, '\nREPUTACION\n')
+            for faction, score in reputation.items():
+                if score != 0:
+                    symbol = '+' if score > 0 else ''
+                    bar = '|' * abs(score)
+                    world_text.insert(tk.END, f"{faction}: {symbol}{score} {bar}\n")
+        # Conditions
+        if conditions:
+            world_text.insert(tk.END, '\nCONDICIONES\n')
+            for cond in sorted(conditions):
+                desc = CONDITION_DESCRIPTIONS.get(cond, cond.replace('_', ' ').title())
+                world_text.insert(tk.END, f"- {desc}\n")
+        # Titles
+        if titles:
+            world_text.insert(tk.END, '\nTITULOS\n')
+            for t in titles:
+                world_text.insert(tk.END, f"* {t}\n")
+        world_text.config(state='disabled')
+
+        log_text.config(state='normal')
+        log_text.delete('1.0', tk.END)
+        if adventure_log:
+            for entry in adventure_log[-8:]:
+                log_text.insert(tk.END, f"{entry}\n")
+        log_text.config(state='disabled')
+
+        money_var.set(f"Oro: {resources['gold']}")
+
+    # Backward compatibility for existing calls
+    def update_char_display():
+        update_panels()
+
+    # Current wheel labels
     current_lbl = tk.Label(main_container, text='Rueda: Race', 
                            font=('Segoe UI', 14, 'bold'), fg='#eebc1d', bg='#000000')
-    main_container.create_window(900, 750, window=current_lbl, tags='ui_element')
+    main_container.create_window(900, 730, window=current_lbl, tags='ui_element')
+    context_lbl = tk.Label(main_container, text='',
+                           font=('Segoe UI', 11, 'italic'), fg='#f0e6d2', bg='#000000', wraplength=500, justify='left')
+    main_container.create_window(900, 760, window=context_lbl, tags='ui_element')
 
     # Spin button
     spin_btn = tk.Button(main_container, text='GIRAR', width=18, font=('Segoe UI', 14, 'bold'), 
@@ -2314,6 +2380,8 @@ def main():
 
     # Adventure phase state
     adventure_phase = {'active': False, 'chapter': 1, 'step': 0}
+    travel_phase = {'active': False, 'done_for_chapter': False}
+    current_location = {'territory': state.selections.get('Territory', 'Human City (Good Factions)'), 'sublocation': None}
     reputation = {}  # faction_name: score
     adventure_log = []  # chapter summaries
     decision_mods = {}  # temporary tag mods from decisions
@@ -2331,6 +2399,10 @@ def main():
     def build_wheel_data(wheel_name):
         """Build wheel segments"""
         segments = []
+
+        if wheel_name == 'Travel':
+            segments = build_travel_segments()
+            return segments
         
         if wheel_name == 'Race':
             items = data.get('races', [])
@@ -2609,6 +2681,9 @@ def main():
                     'color': get_color(i, len(items_copy)),
                     'desc': f"Territorio: {item['name']}"
                 })
+
+        elif wheel_name == 'Travel':
+            segments = build_travel_segments()
         
         elif wheel_name == 'Items Count':
             items = data.get('items_count', [])
@@ -3035,6 +3110,88 @@ def main():
                 weight *= tag_weights[tag]
         return weight
 
+    # Sublocations per territory for travel flavor
+    SUBLOCATIONS = {
+        'Human City (Good Factions)': ['Distrito Mercante', 'Catedral', 'Casa de Gremios'],
+        'Human Slums': ['Callejones', 'Puertos', 'Foso de Lucha'],
+        'Elven Forest': ['Arboleda Antigua', 'Canopia', 'Claro Lunar'],
+        'Dwarven Hold': ['Gran Forja', 'Minas Profundas', 'Bazar de Piedra'],
+        'Outlands': ['Fortin en Ruinas', 'Pantano Sangriento', 'Campamento Bandido']
+    }
+
+    def get_mood_for_territory(territory):
+        mapping = {
+            'Human City (Good Factions)': 'calm',
+            'Human Slums': 'gritty',
+            'Elven Forest': 'mystic',
+            'Dwarven Hold': 'forge',
+            'Outlands': 'tense'
+        }
+        return mapping.get(territory, 'calm')
+
+    def play_music_theme(mood):
+        """Looping lightweight background cue per mood using short beeps (non-blocking)"""
+        if not winsound:
+            return
+
+        # Cancel previous loop if mood changes
+        if music_state['timer']:
+            try:
+                root.after_cancel(music_state['timer'])
+            except Exception:
+                pass
+            music_state['timer'] = None
+
+        music_state['mood'] = mood
+
+        tones = {
+            'calm': [(440, 90), (523, 90)],
+            'mystic': [(392, 110), (622, 110)],
+            'forge': [(262, 110), (196, 110)],
+            'gritty': [(330, 90), (247, 90)],
+            'tense': [(554, 80), (659, 80)]
+        }
+        seq = tones.get(mood, tones['calm'])
+
+        def loop():
+            if music_state['mood'] != mood:
+                return
+            try:
+                for freq, dur in seq:
+                    winsound.Beep(freq, dur)
+            except Exception:
+                pass
+            finally:
+                # repeat every ~4 seconds
+                music_state['timer'] = root.after(4000, loop)
+
+        # start shortly to avoid blocking UI thread during call
+        music_state['timer'] = root.after(200, loop)
+
+    def pick_sublocation(territory):
+        options = SUBLOCATIONS.get(territory, [])
+        return random.choice(options) if options else None
+
+    def build_travel_segments():
+        """Build travel wheel segments weighted by territory affinities"""
+        items = data.get('territories') or data.get('places', [])
+        affinities = build_territory_affinities(
+            state.selections.get('Race', ''),
+            state.selections.get('Class', ''),
+            state.selections.get('Alignment', '')
+        )
+        segments = []
+        for i, item in enumerate(items):
+            territory = item['name']
+            weight = item.get('weight', 1) * affinities.get(territory, 1.0)
+            segments.append({
+                'name': territory,
+                'weight': weight,
+                'color': get_color(i, len(items)),
+                'desc': f"Viajar a {territory}"
+            })
+        return segments
+
     def build_adventure_tag_weights():
         """Build adventure tag weights from character selections"""
         tag_weights = {}
@@ -3203,6 +3360,45 @@ def main():
             bonus += (get_stat_value('Charisma') - 5) * 0.05
         return bonus
 
+    def get_wheel_context(wheel_name):
+        """One-line narration for the current wheel"""
+        if wheel_name == 'Travel':
+            return f"Cap. {adventure_phase['chapter']}: Elige tu destino antes de la accion."
+        if wheel_name.startswith('Adventure Activity'):
+            loc = current_location['territory']
+            sub = current_location.get('sublocation')
+            if sub:
+                return f"En {loc} ({sub}), rumores de oportunidades circulan."
+            return f"En {loc}, buscas tu proxima aventura."
+        if wheel_name.startswith('Adventure Event'):
+            return "Un giro del destino se acerca."
+        if wheel_name.startswith('Adventure Action'):
+            return "Decide tu enfoque frente al desafio."
+        if wheel_name.startswith('Adventure Outcome'):
+            return "Las consecuencias de tus actos se revelan."
+        if wheel_name.startswith('Adventure'):
+            return "Progreso de aventura."
+        if wheel_name.startswith('Magic') or wheel_name.startswith('Spells'):
+            return "Elige el camino arcano que te define."
+        if wheel_name.startswith('Power'):
+            return "Poderes despiertan en tu sangre."
+        if wheel_name.startswith('Skill'):
+            return "Talentos mortales afinan tu oficio."
+        if wheel_name.startswith('Territory'):
+            return "Donde empezara tu historia."
+        return "Forja tu leyenda."
+
+    def should_trigger_travel(event_name):
+        """Decide if an event selection should prompt travel"""
+        name_lower = event_name.lower()
+        ev = next((e for e in data.get('adventure_events', []) if e['name'] == event_name), None)
+        tags = ev.get('tags', []) if ev else []
+        travel_tags = {'explore', 'travel', 'caravan', 'escort', 'escort_caravan', 'guard_caravan'}
+        if any(t in travel_tags for t in tags):
+            return True
+        keywords = ['explor', 'caravan', 'caravana', 'escolta', 'escoltar']
+        return any(k in name_lower for k in keywords)
+
     def get_action_tags_for_chapter(chapter):
         """Get tags from the current chapter's action for stat checks"""
         action_key = f'Adventure Action {chapter}'
@@ -3339,6 +3535,10 @@ def main():
         for faction in factions:
             reputation[faction['name']] = 0
 
+        # Reset travel state for the new run
+        travel_phase['done_for_chapter'] = False
+        travel_phase['active'] = False
+
         # Show End Run button
         end_run_btn.config(state='normal')
         main_container.itemconfigure('end_run_tag', state='normal')
@@ -3359,6 +3559,21 @@ def main():
         chapter = adventure_phase['chapter']
         return f"{ADVENTURE_STEPS[step]} {chapter}"
 
+    def show_travel_wheel():
+        """Display travel wheel before adventure activity"""
+        travel_phase['active'] = True
+        current_lbl.config(text=f'Cap. {adventure_phase["chapter"]} - Viajar')
+        context_lbl.config(text=get_wheel_context('Travel'))
+        segments = build_wheel_data('Travel')
+        if segments:
+            draw_wheel(segments, 0)
+            spinning['rotation'] = 0
+        else:
+            # If no travel options, skip travel to avoid getting stuck
+            travel_phase['active'] = False
+            travel_phase['done_for_chapter'] = True
+            show_adventure_wheel()
+
     def show_adventure_wheel():
         """Display current adventure wheel"""
         # If a chain is active, show the chain wheel instead
@@ -3372,6 +3587,7 @@ def main():
 
         step_labels = ['Actividad', 'Evento', 'Accion', 'Resultado']
         current_lbl.config(text=f'Cap. {chapter} - {step_labels[step]}')
+        context_lbl.config(text=get_wheel_context(wheel_name))
 
         segments = build_wheel_data(wheel_name)
         if segments:
@@ -3403,6 +3619,13 @@ def main():
             if selected_name in EVENT_CHAINS:
                 update_char_display()
                 start_chain(selected_name)
+                return
+            # Certain events trigger travel before action
+            if should_trigger_travel(selected_name):
+                travel_phase['active'] = True
+                travel_phase['done_for_chapter'] = False
+                update_char_display()
+                show_travel_wheel()
                 return
 
         # After outcome step, process chapter end
@@ -3442,6 +3665,8 @@ def main():
         if adventure_phase['step'] > 3:
             adventure_phase['step'] = 0
             adventure_phase['chapter'] += 1
+            travel_phase['done_for_chapter'] = False
+            travel_phase['active'] = False
         show_adventure_wheel()
 
     def show_decision_popup(event_name):
@@ -3484,6 +3709,14 @@ def main():
 
     def end_run(reason, detail=''):
         """End the adventure"""
+        # Stop background music loop
+        music_state['mood'] = None
+        if music_state['timer']:
+            try:
+                root.after_cancel(music_state['timer'])
+            except Exception:
+                pass
+            music_state['timer'] = None
         adventure_phase['active'] = False
         spin_btn.config(state='disabled')
         end_run_btn.config(state='disabled')
@@ -3707,6 +3940,7 @@ def main():
 
         chapter = adventure_phase['chapter']
         current_lbl.config(text=f'Cap. {chapter} - {step["label"]}')
+        context_lbl.config(text=f"{chain_name}: {step['label']}")
 
         segments = build_chain_wheel_segments(chain_name, step_id)
         if segments:
@@ -3715,6 +3949,31 @@ def main():
         else:
             # No valid options, skip
             end_chain()
+
+    def handle_travel_result(selected_name):
+        """Apply travel choice: set territory and sublocation"""
+        travel_phase['active'] = False
+        travel_phase['done_for_chapter'] = True
+
+        current_location['territory'] = selected_name
+        subloc = pick_sublocation(selected_name)
+        current_location['sublocation'] = subloc
+        state.selections['Territory'] = selected_name
+        if subloc:
+            state.selections['_Sublocation'] = subloc
+        else:
+            state.selections.pop('_Sublocation', None)
+
+        adventure_log.append(f"Viajas a {selected_name}" + (f" ({subloc})" if subloc else ''))
+        play_music_theme(get_mood_for_territory(selected_name))
+        root.after(100, lambda: load_background_image(selected_name))
+        update_char_display()
+
+        # After travel, proceed with adventure flow
+        if adventure_phase['active'] and adventure_phase['step'] == 1:
+            advance_adventure()
+        else:
+            show_adventure_wheel()
 
     def handle_chain_result(selected_name):
         """Handle the result of spinning a chain wheel"""
@@ -3769,6 +4028,15 @@ def main():
         else:
             # Chain complete
             end_chain()
+
+    def change_gold(amount, source=''):
+        """Adjust gold and log the change"""
+        resources['gold'] = max(0, resources['gold'] + amount)
+        sign = '+' if amount >= 0 else ''
+        entry = f"  [ORO] {sign}{amount}"
+        if source:
+            entry += f" {source}"
+        adventure_log.append(entry)
 
     def apply_chain_effects(effects, context_stat=None):
         """Apply effects from a chain option with narrative feedback"""
@@ -3859,9 +4127,9 @@ def main():
 
         # Wealth changes
         if effects.get('gain_wealth'):
-            adventure_log.append(f'  [+] Riqueza obtenida')
+            change_gold(25, 'ganas riqueza')
         if effects.get('lose_wealth'):
-            adventure_log.append(f'  [-] Riqueza perdida')
+            change_gold(-20, 'pierdes riqueza')
 
         # Reputation changes with narrative
         for faction, change in effects.get('rep', {}).items():
@@ -3903,29 +4171,39 @@ def main():
         decision_mods.clear()
         update_char_display()
 
-        # Random event chance (40%) - an event fires between chapters
-        if random.random() < 0.4:
+        # Random event chance (30%) - avoid immediate repeats
+        if random.random() < 0.3:
             event_chain = pick_random_event_chain()
             if event_chain:
+                last_random_event['chapter'] = adventure_phase['chapter']
+                last_random_event['name'] = event_chain
                 adventure_phase['chapter'] += 1
                 adventure_phase['step'] = 0
+                travel_phase['done_for_chapter'] = False
+                travel_phase['active'] = False
                 start_chain(event_chain)
                 return
 
         # Advance chapter
         adventure_phase['chapter'] += 1
         adventure_phase['step'] = 0
+        travel_phase['done_for_chapter'] = False
+        travel_phase['active'] = False
         show_adventure_wheel()
 
     def pick_random_event_chain():
         """Pick a random event that has a chain, weighted by tags and conditions"""
         events = data.get('adventure_events', [])
+        current_chapter = adventure_phase['chapter']
         tag_weights = build_adventure_tag_weights()
 
         candidates = []
         for item in events:
             # Only pick events that have chains
             if item['name'] not in EVENT_CHAINS:
+                continue
+            # Skip if event fired too recently
+            if last_random_event['name'] == item['name'] and current_chapter - last_random_event['chapter'] < 2:
                 continue
             # Check if blocked
             chain_def = EVENT_CHAINS[item['name']]
@@ -4068,6 +4346,8 @@ def main():
                 spinning['rotation'] = final_rotation
                 draw_wheel(segments, final_rotation)
                 spinning['active'] = False
+                play_sound('stop')
+                play_sound('prize')
                 root.after(500, lambda: show_result_popup(segments[final_idx]))
                 return
             
@@ -4110,6 +4390,9 @@ def main():
 
     def on_spin_result(selected_name):
         """Handle spin result"""
+        if travel_phase['active']:
+            handle_travel_result(selected_name)
+            return
         if adventure_phase['active']:
             if chain_state['active']:
                 handle_chain_result(selected_name)
@@ -4147,6 +4430,7 @@ def main():
         current_wheel_config = get_current_wheel_config()
         if wheel_index['i'] < len(current_wheel_config):
             wheel_name = current_wheel_config[wheel_index['i']]
+            context_lbl.config(text=get_wheel_context(wheel_name))
             segments = build_wheel_data(wheel_name)
             if segments:
                 draw_wheel(segments, 0)
@@ -4162,9 +4446,14 @@ def main():
             chain_name = chain_state['chain_name']
             step_id = chain_state['step_id']
             segments = build_chain_wheel_segments(chain_name, step_id)
+            wheel_name = chain_name
         elif adventure_phase['active']:
-            wheel_name = get_adventure_wheel_name()
-            segments = build_wheel_data(wheel_name)
+            if travel_phase['active']:
+                wheel_name = 'Travel'
+                segments = build_wheel_data(wheel_name)
+            else:
+                wheel_name = get_adventure_wheel_name()
+                segments = build_wheel_data(wheel_name)
         else:
             current_wheel_config = get_current_wheel_config()
             if wheel_index['i'] >= len(current_wheel_config):
@@ -4174,6 +4463,11 @@ def main():
 
         if not segments:
             messagebox.showwarning('Error', f'No hay opciones para {wheel_name}')
+            if wheel_name == 'Travel' and adventure_phase['active']:
+                # Skip travel and continue adventure to avoid blocking
+                travel_phase['active'] = False
+                travel_phase['done_for_chapter'] = True
+                show_adventure_wheel()
             return
 
         # Weighted random
@@ -4188,6 +4482,7 @@ def main():
                 final_idx = i
                 break
 
+        play_sound('spin')
         animate_spin(segments, final_idx)
 
     spin_btn.config(command=spin_action)
@@ -4197,40 +4492,44 @@ def main():
     def skip_to_adventure():
         """Pre-fill a test character and jump to adventure phase"""
         test_char = {
-            'Race': 'Dark Elf',
-            'Gender': 'Male',
-            'Age': 'Young Adult (19-35)',
-            'Archetype': 'Rogue',
-            'Class': 'Assassin',
-            'Alignment': 'Chaotic Neutral',
-            'Strength': '6 (Excellent)',
-            'Agility': '8 (Outstanding)',
-            'Durability': '4 (Average)',
+            'Race': 'Human',
+            'Gender': 'Female',
+            'Age': 'Adult (36-60)',
+            'Archetype': 'Merchant',
+            'Class': 'Trader',
+            'Alignment': 'Neutral Good',
+            'Strength': '4 (Average)',
+            'Agility': '5 (Good)',
+            'Durability': '5 (Good)',
             'Intelligence': '7 (Great)',
-            'Charisma': '5 (Good)',
-            'Weapon': 'Dagger',
-            'Weapon Mastery': 'Skilled',
+            'Charisma': '8 (Outstanding)',
+            'Weapon': 'Rapier',
+            'Weapon Mastery': 'Expert',
             'Power Count': '1 (Single)',
-            'Power 1': 'Shadow Step (innate)',
+            'Power 1': 'Mind Control (innate)',
             'Power Mastery 1': 'Advanced',
             'Magic Count': '1 (Single)',
-            'Magic Type 1': 'Shadow',
-            'Spells 1': 'Shadow Veil',
-            'Magic Skill 1': 'Apprentice',
-            'Skill Count': '2 (Dual)',
-            'Skill 1': 'Stealth',
+            'Magic Type 1': 'Arcane',
+            'Spells 1': 'Arcane Missile',
+            'Magic Skill 1': 'Adept',
+            'Skill Count': '3 (Triple)',
+            'Skill 1': 'Persuasion',
             'Skill Mastery 1': 'Expert',
-            'Skill 2': 'Lockpicking',
-            'Skill Mastery 2': 'Novice',
-            'Skill Efficiency': 'Good (100%)',
-            'Territory': 'Human Slums',
-            'Items Count': '1 (Single)',
-            'Item 1': 'Venom Dagger',
+            'Skill 2': 'Stealth',
+            'Skill Mastery 2': 'Skilled',
+            'Skill 3': 'Investigation',
+            'Skill Mastery 3': 'Skilled',
+            'Skill Efficiency': 'Great (115%)',
+            'Territory': 'Human City (Good Factions)',
+            'Items Count': '2 (Dual)',
+            'Item 1': 'Guild Signet',
+            'Item 2': 'Ledger',
         }
         for k, v in test_char.items():
             state.selections[k] = v
+        resources['gold'] = 120
         # Load territory background
-        root.after(100, lambda: load_background_image('Human Slums'))
+        root.after(100, lambda: load_background_image(test_char['Territory']))
         update_char_display()
         start_adventure_phase()
 
