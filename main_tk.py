@@ -446,6 +446,1471 @@ EVENT_CHAINS = {
                 ]
             }
         ]
+    },
+
+    # ---- TALK WITH A STRANGER ----
+    "Talk with a Stranger": {
+        "steps": [
+            {
+                "id": "stranger_type",
+                "label": "Tipo de Desconocido",
+                "options": [
+                    {"name": "Mercader Errante", "weight": 5, "desc": "Un comerciante con mercancias exoticas.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "conversation_result", "effects": {"_stranger": "mercader", "_talk_difficulty": 3}},
+                    {"name": "Veterano de Guerra", "weight": 5, "desc": "Un soldado retirado con cicatrices y experiencia.",
+                     "stat_weight": {"Strength": 1.2},
+                     "next": "conversation_result", "effects": {"_stranger": "veterano", "_talk_difficulty": 4}},
+                    {"name": "Hechicero Misterioso", "weight": 3, "desc": "Un mago encapuchado que susurra conjuros.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "conversation_result", "effects": {"_stranger": "mago", "_talk_difficulty": 5}},
+                    {"name": "Ladron Disfrazado", "weight": 4, "desc": "Alguien cuya sonrisa oculta intenciones oscuras.",
+                     "stat_weight": {"Agility": 1.2}, "skill_bonus": {"Perception": 1.5},
+                     "next": "conversation_result", "effects": {"_stranger": "ladron", "_talk_difficulty": 5}},
+                    {"name": "Noble de Incognito", "weight": 3, "desc": "Un aristocrata viajando sin escolta.",
+                     "stat_weight": {"Charisma": 1.3}, "skill_bonus": {"Persuasion": 1.3},
+                     "next": "conversation_result", "effects": {"_stranger": "noble", "_talk_difficulty": 4}}
+                ]
+            },
+            {
+                "id": "conversation_result",
+                "label": "Resultado de la Conversacion",
+                "stat_check": "Charisma",
+                "difficulty_key": "_talk_difficulty",
+                "options": [
+                    {"name": "Nuevo Aliado", "weight": 3, "desc": "Ganas un aliado valioso para el futuro.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Charisma", "add_condition": "has_ally", "rep": {"Merchant Guild": 1}}},
+                    {"name": "Informacion Valiosa", "weight": 5, "desc": "Compartes secretos utiles.",
+                     "success_tier": "mid",
+                     "effects": {"add_condition": "clue_found", "stat_boost": 1}},
+                    {"name": "Conversacion Vacia", "weight": 4, "desc": "No sacas nada en limpio.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Te Roban!", "weight": 3, "desc": "El desconocido te roba mientras hablas.",
+                     "success_tier": "fail",
+                     "effects": {"lose_wealth": True, "rep": {"Thieves Guild": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- SEARCH FOR RARE GOODS ----
+    "Search for Rare Goods": {
+        "steps": [
+            {
+                "id": "search_location",
+                "label": "Donde Buscar",
+                "options": [
+                    {"name": "Mercado Negro", "weight": 5, "desc": "Bienes prohibidos a precios elevados.",
+                     "stat_weight": {"Charisma": 1.2}, "skill_bonus": {"Stealth": 1.3},
+                     "next": "search_result", "effects": {"_search_type": "black_market", "_search_difficulty": 4}},
+                    {"name": "Caravana Lejana", "weight": 5, "desc": "Una caravana de tierras exoticas.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "search_result", "effects": {"_search_type": "caravan", "_search_difficulty": 3}},
+                    {"name": "Ruinas Comerciales", "weight": 3, "desc": "Restos de un antiguo emporio.",
+                     "stat_weight": {"Intelligence": 1.3, "Agility": 1.2},
+                     "next": "search_result", "effects": {"_search_type": "ruins", "_search_difficulty": 5}},
+                    {"name": "Contacto Secreto", "weight": 4, "desc": "Un informante con conexiones exclusivas.",
+                     "stat_weight": {"Charisma": 1.4}, "skill_bonus": {"Persuasion": 1.5},
+                     "next": "search_result", "effects": {"_search_type": "contact", "_search_difficulty": 4}}
+                ]
+            },
+            {
+                "id": "search_result",
+                "label": "Resultado de la Busqueda",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_search_difficulty",
+                "options": [
+                    {"name": "Hallazgo Excepcional", "weight": 2, "desc": "Encuentras bienes unicos e invaluables.",
+                     "success_tier": "high",
+                     "effects": {"add_random_item": True, "gain_wealth": True, "rep": {"Merchant Guild": 2}}},
+                    {"name": "Buenos Bienes", "weight": 5, "desc": "Encuentras mercancia de calidad.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True, "rep": {"Merchant Guild": 1}}},
+                    {"name": "Nada Interesante", "weight": 4, "desc": "No encuentras nada que valga la pena.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Trampa de Contrabandistas", "weight": 3, "desc": "Caes en una trampa de criminales.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "lose_wealth": True, "rep": {"Thieves Guild": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- ESTABLISH A BUSINESS ----
+    "Establish a Business": {
+        "steps": [
+            {
+                "id": "business_type",
+                "label": "Tipo de Negocio",
+                "options": [
+                    {"name": "Taberna", "weight": 5, "desc": "Un lugar de bebida y rumores.",
+                     "stat_weight": {"Charisma": 1.4},
+                     "next": "business_result", "effects": {"_business": "taberna", "_biz_difficulty": 3}},
+                    {"name": "Forja", "weight": 4, "desc": "Un taller para crear armas y armaduras.",
+                     "stat_weight": {"Strength": 1.3}, "skill_bonus": {"Smithing": 2.0},
+                     "next": "business_result", "effects": {"_business": "forja", "_biz_difficulty": 4}},
+                    {"name": "Tienda de Magia", "weight": 3, "desc": "Venta de componentes y hechizos.",
+                     "stat_weight": {"Intelligence": 1.4}, "requires_magic": True,
+                     "next": "business_result", "effects": {"_business": "magia", "_biz_difficulty": 5}},
+                    {"name": "Red de Informantes", "weight": 3, "desc": "Un negocio de secretos y espionaje.",
+                     "stat_weight": {"Charisma": 1.3, "Intelligence": 1.2}, "skill_bonus": {"Stealth": 1.3},
+                     "next": "business_result", "effects": {"_business": "espionaje", "_biz_difficulty": 6}},
+                    {"name": "Casa de Apuestas", "weight": 4, "desc": "Ganancias rapidas con mucho riesgo.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "business_result", "effects": {"_business": "apuestas", "_biz_difficulty": 4}}
+                ]
+            },
+            {
+                "id": "business_result",
+                "label": "Resultado del Negocio",
+                "stat_check": "Charisma",
+                "difficulty_key": "_biz_difficulty",
+                "options": [
+                    {"name": "Negocio Prospero", "weight": 3, "desc": "Tu negocio florece rapidamente.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "stat_boost_specific": "Charisma", "add_condition": "business_owner", "rep": {"Merchant Guild": 3}}},
+                    {"name": "Beneficios Moderados", "weight": 5, "desc": "Funciona, pero sin grandes ganancias.",
+                     "success_tier": "mid",
+                     "effects": {"gain_wealth": True, "add_condition": "business_owner", "rep": {"Merchant Guild": 1}}},
+                    {"name": "Negocio Fallido", "weight": 4, "desc": "Los costos superan los ingresos.",
+                     "success_tier": "low",
+                     "effects": {"lose_wealth": True}},
+                    {"name": "Robado por Competidores", "weight": 2, "desc": "Tu negocio es saboteado y saqueado.",
+                     "success_tier": "fail",
+                     "effects": {"lose_wealth": True, "stat_damage": 1, "rep": {"Merchant Guild": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- GUARD A CARAVAN ----
+    "Guard a Caravan": {
+        "steps": [
+            {
+                "id": "threat_type",
+                "label": "Tipo de Amenaza",
+                "options": [
+                    {"name": "Emboscada de Bandidos", "weight": 5, "desc": "Un grupo de bandidos ataca la caravana.",
+                     "stat_weight": {"Strength": 1.3},
+                     "next": "defense_strategy", "effects": {"_threat": "bandidos", "_threat_difficulty": 4}},
+                    {"name": "Bestias Salvajes", "weight": 5, "desc": "Criaturas hambrientas acechan la ruta.",
+                     "stat_weight": {"Agility": 1.2}, "skill_bonus": {"Tracking": 1.5},
+                     "next": "defense_strategy", "effects": {"_threat": "bestias", "_threat_difficulty": 5}},
+                    {"name": "Clima Extremo", "weight": 4, "desc": "Una tormenta devastadora azota el camino.",
+                     "stat_weight": {"Durability": 1.4},
+                     "next": "defense_strategy", "effects": {"_threat": "clima", "_threat_difficulty": 4}},
+                    {"name": "Ejercito Hostil", "weight": 2, "desc": "Soldados enemigos bloquean el paso.",
+                     "stat_weight": {"Strength": 1.3, "Intelligence": 1.2},
+                     "next": "defense_strategy", "effects": {"_threat": "ejercito", "_threat_difficulty": 7}}
+                ]
+            },
+            {
+                "id": "defense_strategy",
+                "label": "Estrategia de Defensa",
+                "options": [
+                    {"name": "Contraemboscada", "weight": 4, "desc": "Preparas tu propia emboscada.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Tracking": 1.5, "Stealth": 1.3},
+                     "next": "caravan_result"},
+                    {"name": "Combate Frontal", "weight": 5, "desc": "Enfrentas la amenaza cara a cara.",
+                     "stat_weight": {"Strength": 1.5, "Durability": 1.3},
+                     "next": "caravan_result"},
+                    {"name": "Evasion Rapida", "weight": 4, "desc": "Intentas esquivar la amenaza por rutas alternas.",
+                     "stat_weight": {"Agility": 1.5}, "skill_bonus": {"Tracking": 1.3},
+                     "next": "caravan_result"},
+                    {"name": "Negociar Paso", "weight": 3, "desc": "Intentas dialogar o sobornar.",
+                     "stat_weight": {"Charisma": 1.6}, "skill_bonus": {"Persuasion": 1.5},
+                     "next": "caravan_result"}
+                ]
+            },
+            {
+                "id": "caravan_result",
+                "label": "Resultado de la Escolta",
+                "stat_check": "Strength",
+                "difficulty_key": "_threat_difficulty",
+                "options": [
+                    {"name": "Caravana Intacta", "weight": 3, "desc": "Proteges la caravana sin perdidas. Gran recompensa.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "stat_boost": 1, "rep": {"Merchant Guild": 3, "Hunters Lodge": 1}}},
+                    {"name": "Danos Menores", "weight": 5, "desc": "La caravana llega con algunos danos.",
+                     "success_tier": "mid",
+                     "effects": {"gain_wealth": True, "rep": {"Merchant Guild": 1}}},
+                    {"name": "Perdidas Graves", "weight": 4, "desc": "Gran parte de la mercancia se pierde.",
+                     "success_tier": "low",
+                     "effects": {"rep": {"Merchant Guild": -1}}},
+                    {"name": "Caravana Destruida", "weight": 2, "desc": "La caravana es arrasada. Apenas escapas.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "lose_wealth": True, "rep": {"Merchant Guild": -3}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- TRACK A FUGITIVE ----
+    "Track a Fugitive": {
+        "steps": [
+            {
+                "id": "fugitive_type",
+                "label": "Tipo de Fugitivo",
+                "options": [
+                    {"name": "Criminal Peligroso", "weight": 5, "desc": "Un asesino en serie buscado por la corona.",
+                     "stat_weight": {"Strength": 1.2, "Agility": 1.2},
+                     "next": "tracking_method", "effects": {"_fugitive": "criminal", "_fugitive_difficulty": 5}},
+                    {"name": "Noble Desertor", "weight": 4, "desc": "Un noble que huye con secretos de estado.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "tracking_method", "effects": {"_fugitive": "noble", "_fugitive_difficulty": 4}},
+                    {"name": "Mago Renegado", "weight": 3, "desc": "Un hechicero que rompio sus juramentos.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "tracking_method", "effects": {"_fugitive": "mago", "_fugitive_difficulty": 7}},
+                    {"name": "Espia Enemigo", "weight": 3, "desc": "Un infiltrado de una faccion rival.",
+                     "stat_weight": {"Agility": 1.3}, "skill_bonus": {"Stealth": 1.5, "Tracking": 1.3},
+                     "next": "tracking_method", "effects": {"_fugitive": "espia", "_fugitive_difficulty": 6}}
+                ]
+            },
+            {
+                "id": "tracking_method",
+                "label": "Metodo de Rastreo",
+                "options": [
+                    {"name": "Interrogar Contactos", "weight": 5, "desc": "Presionas a conocidos del fugitivo.",
+                     "stat_weight": {"Charisma": 1.4}, "skill_bonus": {"Persuasion": 1.5, "Intimidation": 2.0},
+                     "next": "capture_result"},
+                    {"name": "Rastrear Huellas", "weight": 5, "desc": "Sigues su rastro fisico.",
+                     "stat_weight": {"Agility": 1.3}, "skill_bonus": {"Tracking": 2.5},
+                     "next": "capture_result"},
+                    {"name": "Magia de Localizacion", "weight": 3, "desc": "Usas hechizos para encontrarlo.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "capture_result"},
+                    {"name": "Pagar Informantes", "weight": 4, "desc": "Compras informacion a la red criminal.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "capture_result", "effects": {"lose_wealth": True, "rep": {"Thieves Guild": 1}}}
+                ]
+            },
+            {
+                "id": "capture_result",
+                "label": "Resultado de la Captura",
+                "stat_check": "Agility",
+                "difficulty_key": "_fugitive_difficulty",
+                "options": [
+                    {"name": "Captura Limpia", "weight": 3, "desc": "Atrapas al fugitivo sin incidentes.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "stat_boost": 1, "rep": {"The Crown": 3, "Hunters Lodge": 1}}},
+                    {"name": "Captura Violenta", "weight": 4, "desc": "Lo atrapas pero con una pelea dura.",
+                     "success_tier": "mid",
+                     "effects": {"gain_wealth": True, "stat_damage": 1, "rep": {"The Crown": 1}}},
+                    {"name": "El Fugitivo Escapa", "weight": 4, "desc": "Se te escurre entre los dedos.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "fugitive_loose", "rep": {"The Crown": -1}}},
+                    {"name": "Emboscada del Fugitivo", "weight": 3, "desc": "Te tiende una trampa y te hiere gravemente.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "wounded"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- STUDY AN ANCIENT TOME ----
+    "Study an Ancient Tome": {
+        "steps": [
+            {
+                "id": "tome_type",
+                "label": "Tipo de Tomo",
+                "options": [
+                    {"name": "Grimorio de Conjuros", "weight": 4, "desc": "Un libro de hechizos poderosos.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "study_result", "effects": {"_tome": "grimorio", "_study_difficulty": 5}},
+                    {"name": "Tratado Alquimico", "weight": 5, "desc": "Formulas para pociones y transmutaciones.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Alchemy": 2.0},
+                     "next": "study_result", "effects": {"_tome": "alquimia", "_study_difficulty": 4}},
+                    {"name": "Profecia Antigua", "weight": 3, "desc": "Un texto profetico sobre el fin de los tiempos.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "study_result", "effects": {"_tome": "profecia", "_study_difficulty": 6}},
+                    {"name": "Diario de Archimago", "weight": 3, "desc": "Las memorias de un mago legendario.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "study_result", "effects": {"_tome": "diario", "_study_difficulty": 5}},
+                    {"name": "Textos Prohibidos", "weight": 2, "desc": "Conocimiento sellado por la iglesia.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "study_result", "effects": {"_tome": "prohibido", "_study_difficulty": 7}}
+                ]
+            },
+            {
+                "id": "study_result",
+                "label": "Resultado del Estudio",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_study_difficulty",
+                "options": [
+                    {"name": "Conocimiento Profundo", "weight": 3, "desc": "Comprendes secretos ocultos del universo.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Intelligence", "stat_boost": 1, "rep": {"Mages Circle": 3}}},
+                    {"name": "Algo Aprendido", "weight": 5, "desc": "Ganas conocimiento util, aunque fragmentario.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost_specific": "Intelligence", "rep": {"Mages Circle": 1}}},
+                    {"name": "Incomprensible", "weight": 4, "desc": "El texto es demasiado complejo para ti.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Maldicion del Conocimiento", "weight": 2, "desc": "El tomo estaba maldito. Tu mente sufre.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "cursed", "rep": {"Mages Circle": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- PERFORM A DARK RITUAL ----
+    "Perform a Dark Ritual": {
+        "steps": [
+            {
+                "id": "ritual_type",
+                "label": "Tipo de Ritual",
+                "options": [
+                    {"name": "Invocacion Demoniaca", "weight": 4, "desc": "Invocas a un demonio para negociar.",
+                     "stat_weight": {"Intelligence": 1.5},
+                     "next": "ritual_result", "effects": {"_ritual": "demonio", "_ritual_difficulty": 7}},
+                    {"name": "Resurreccion", "weight": 3, "desc": "Intentas devolver un alma del mas alla.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "ritual_result", "effects": {"_ritual": "resurreccion", "_ritual_difficulty": 8}},
+                    {"name": "Pacto de Sangre", "weight": 4, "desc": "Sellas un pacto con tu propia sangre.",
+                     "stat_weight": {"Durability": 1.3},
+                     "next": "ritual_result", "effects": {"_ritual": "pacto", "_ritual_difficulty": 5}},
+                    {"name": "Maldicion Dirigida", "weight": 4, "desc": "Lanzas una maldicion sobre tu enemigo.",
+                     "stat_weight": {"Intelligence": 1.3, "Charisma": 1.2},
+                     "next": "ritual_result", "effects": {"_ritual": "maldicion", "_ritual_difficulty": 5}},
+                    {"name": "Ascension Oscura", "weight": 1, "desc": "Intentas absorber poder de las sombras.",
+                     "stat_weight": {"Intelligence": 1.5, "Durability": 1.3},
+                     "next": "ritual_result", "effects": {"_ritual": "ascension", "_ritual_difficulty": 9}}
+                ]
+            },
+            {
+                "id": "ritual_result",
+                "label": "Resultado del Ritual",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_ritual_difficulty",
+                "options": [
+                    {"name": "Ritual Perfecto", "weight": 2, "desc": "El ritual funciona a la perfeccion. Poder inmenso.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "add_condition": "dark_empowered", "rep": {"Shadow Council": 3, "Church of Light": -2}}},
+                    {"name": "Exito Parcial", "weight": 4, "desc": "Funciona, pero algo salio diferente a lo esperado.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "rep": {"Shadow Council": 1, "Church of Light": -1}}},
+                    {"name": "Fallo Contenido", "weight": 4, "desc": "El ritual falla pero contienes el dano.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1}},
+                    {"name": "Catastrofe Ritual", "weight": 3, "desc": "La energia descontrolada te devasta.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 3, "add_condition": "cursed", "rep": {"Shadow Council": -1}}},
+                    {"name": "Posesion Demoniaca", "weight": 1, "desc": "Algo oscuro toma control de tu cuerpo.",
+                     "success_tier": "fail",
+                     "effects": {"terminal": "death"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- INFILTRATE A STRONGHOLD ----
+    "Infiltrate a Stronghold": {
+        "steps": [
+            {
+                "id": "entry_method",
+                "label": "Metodo de Entrada",
+                "options": [
+                    {"name": "Disfraz", "weight": 5, "desc": "Te haces pasar por alguien autorizado.",
+                     "stat_weight": {"Charisma": 1.5}, "skill_bonus": {"Disguise": 2.0},
+                     "next": "infiltrate_objective"},
+                    {"name": "Tuneles Subterraneos", "weight": 4, "desc": "Encuentras pasadizos secretos.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "infiltrate_objective"},
+                    {"name": "Soborno a Guardias", "weight": 4, "desc": "Pagas para que miren a otro lado.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "infiltrate_objective", "effects": {"lose_wealth": True}},
+                    {"name": "Escalada Nocturna", "weight": 4, "desc": "Escalas los muros bajo el amparo de la noche.",
+                     "stat_weight": {"Agility": 1.6}, "skill_bonus": {"Stealth": 2.0},
+                     "next": "infiltrate_objective"},
+                    {"name": "Magia de Invisibilidad", "weight": 2, "desc": "Te vuelves invisible magicamente.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "infiltrate_objective"}
+                ]
+            },
+            {
+                "id": "infiltrate_objective",
+                "label": "Objetivo en el Interior",
+                "options": [
+                    {"name": "Robar un Tesoro", "weight": 5, "desc": "Buscas la camara del tesoro.",
+                     "stat_weight": {"Agility": 1.3}, "skill_bonus": {"Lockpicking": 2.0},
+                     "next": "infiltrate_result", "effects": {"_objective": "tesoro", "_infil_difficulty": 5}},
+                    {"name": "Liberar un Prisionero", "weight": 4, "desc": "Rescatas a alguien de las mazmorras.",
+                     "stat_weight": {"Strength": 1.2, "Agility": 1.2},
+                     "next": "infiltrate_result", "effects": {"_objective": "prisionero", "_infil_difficulty": 5}},
+                    {"name": "Sabotear Defensas", "weight": 3, "desc": "Destruyes fortificaciones desde dentro.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "infiltrate_result", "effects": {"_objective": "sabotaje", "_infil_difficulty": 6}},
+                    {"name": "Espiar al Enemigo", "weight": 4, "desc": "Recoges informacion vital.",
+                     "stat_weight": {"Intelligence": 1.3, "Agility": 1.2}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "infiltrate_result", "effects": {"_objective": "espionaje", "_infil_difficulty": 4}}
+                ]
+            },
+            {
+                "id": "infiltrate_result",
+                "label": "Resultado de la Infiltracion",
+                "stat_check": "Agility",
+                "difficulty_key": "_infil_difficulty",
+                "options": [
+                    {"name": "Mision Perfecta", "weight": 3, "desc": "Completas el objetivo sin ser detectado.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "gain_wealth": True, "rep": {"Thieves Guild": 3}}},
+                    {"name": "Exito con Complicaciones", "weight": 4, "desc": "Lo logras pero te detectan al salir.",
+                     "success_tier": "mid",
+                     "effects": {"gain_wealth": True, "add_condition": "enemy_alerted", "rep": {"Thieves Guild": 1}}},
+                    {"name": "Descubierto y Perseguido", "weight": 4, "desc": "Te detectan y debes huir.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1, "add_condition": "enemy_alerted"}},
+                    {"name": "Capturado", "weight": 3, "desc": "Te atrapan y te encierran.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "imprisoned", "rep": {"The Crown": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- COMPETE IN A TOURNAMENT ----
+    "Compete in a Tournament": {
+        "steps": [
+            {
+                "id": "tournament_type",
+                "label": "Tipo de Torneo",
+                "options": [
+                    {"name": "Combate Cuerpo a Cuerpo", "weight": 5, "desc": "Lucha sin armas en la arena.",
+                     "stat_weight": {"Strength": 1.5, "Durability": 1.3},
+                     "next": "tournament_round", "effects": {"_tournament": "melee", "_tourn_difficulty": 5}},
+                    {"name": "Duelo de Espadas", "weight": 5, "desc": "Enfrentamientos uno contra uno con armas.",
+                     "stat_weight": {"Strength": 1.3, "Agility": 1.3},
+                     "next": "tournament_round", "effects": {"_tournament": "swords", "_tourn_difficulty": 5}},
+                    {"name": "Tiro con Arco", "weight": 4, "desc": "Competencia de precision a distancia.",
+                     "stat_weight": {"Agility": 1.6}, "skill_bonus": {"Archery": 2.5},
+                     "next": "tournament_round", "effects": {"_tournament": "archery", "_tourn_difficulty": 4}},
+                    {"name": "Justa a Caballo", "weight": 3, "desc": "Cargas a caballo con lanza.",
+                     "stat_weight": {"Strength": 1.4, "Agility": 1.2},
+                     "next": "tournament_round", "effects": {"_tournament": "joust", "_tourn_difficulty": 6}},
+                    {"name": "Duelo de Magia", "weight": 2, "desc": "Un torneo de hechiceros.",
+                     "stat_weight": {"Intelligence": 1.6}, "requires_magic": True,
+                     "next": "tournament_round", "effects": {"_tournament": "magic", "_tourn_difficulty": 6}}
+                ]
+            },
+            {
+                "id": "tournament_round",
+                "label": "Ronda Final",
+                "stat_check": "Strength",
+                "difficulty_key": "_tourn_difficulty",
+                "options": [
+                    {"name": "Campeon!", "weight": 3, "desc": "Vences a todos los rivales. Eres el campeon!",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "gain_wealth": True, "add_condition": "tournament_champion", "rep": {"Hunters Lodge": 3, "The Crown": 2}}},
+                    {"name": "Finalista", "weight": 4, "desc": "Llegas a la final pero pierdes el ultimo combate.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "rep": {"Hunters Lodge": 1}}},
+                    {"name": "Eliminado en Semifinal", "weight": 4, "desc": "Un rival fuerte te derrota antes de la final.",
+                     "success_tier": "low",
+                     "effects": {"rep": {"Hunters Lodge": -1}}},
+                    {"name": "Descalificado", "weight": 2, "desc": "Te acusan de hacer trampa. Humillacion publica.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "rep": {"Hunters Lodge": -2, "The Crown": -1}}},
+                    {"name": "Herido Gravemente", "weight": 2, "desc": "Un golpe brutal te deja malherido.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "wounded"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- LEAD A REBELLION ----
+    "Lead a Rebellion": {
+        "steps": [
+            {
+                "id": "rebellion_strategy",
+                "label": "Estrategia de Rebelion",
+                "options": [
+                    {"name": "Asalto Directo", "weight": 4, "desc": "Atacas el centro de poder directamente.",
+                     "stat_weight": {"Strength": 1.5, "Durability": 1.3},
+                     "next": "rebellion_result", "effects": {"_strategy": "asalto", "_rebel_difficulty": 7}},
+                    {"name": "Subversion Interna", "weight": 4, "desc": "Corroes el poder desde dentro.",
+                     "stat_weight": {"Intelligence": 1.4, "Charisma": 1.3}, "skill_bonus": {"Persuasion": 1.5},
+                     "next": "rebellion_result", "effects": {"_strategy": "subversion", "_rebel_difficulty": 6}},
+                    {"name": "Alianza con Bandidos", "weight": 3, "desc": "Te alias con elementos criminales.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "rebellion_result", "effects": {"_strategy": "bandidos", "_rebel_difficulty": 5, "rep": {"Thieves Guild": 1}}},
+                    {"name": "Propaganda Popular", "weight": 4, "desc": "Ganas al pueblo con discursos y promesas.",
+                     "stat_weight": {"Charisma": 1.6}, "skill_bonus": {"Persuasion": 2.0},
+                     "next": "rebellion_result", "effects": {"_strategy": "propaganda", "_rebel_difficulty": 5}},
+                    {"name": "Asesinato Politico", "weight": 2, "desc": "Eliminas al lider enemigo directamente.",
+                     "stat_weight": {"Agility": 1.5}, "skill_bonus": {"Stealth": 2.0},
+                     "next": "rebellion_result", "effects": {"_strategy": "asesinato", "_rebel_difficulty": 8}}
+                ]
+            },
+            {
+                "id": "rebellion_result",
+                "label": "Resultado de la Rebelion",
+                "stat_check": "Charisma",
+                "difficulty_key": "_rebel_difficulty",
+                "options": [
+                    {"name": "Victoria Revolucionaria", "weight": 2, "desc": "El regimen cae. Eres el nuevo lider.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "gain_wealth": True, "add_condition": "rebel_leader", "rep": {"The Crown": -3, "Shadow Council": 2}}},
+                    {"name": "Control Parcial", "weight": 4, "desc": "Ganas terreno pero el conflicto continua.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "add_condition": "rebellion_ongoing", "rep": {"The Crown": -2}}},
+                    {"name": "Represion Brutal", "weight": 4, "desc": "El poder contraataca con fuerza.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1, "add_condition": "wanted_rebel", "rep": {"The Crown": -1}}},
+                    {"name": "Aplastados", "weight": 3, "desc": "La rebelion es destruida sin piedad.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 3, "add_condition": "wanted_rebel", "rep": {"The Crown": -3}}},
+                    {"name": "Ejecutado!", "weight": 1, "desc": "Te capturan y te ejecutan publicamente.",
+                     "success_tier": "fail",
+                     "effects": {"terminal": "death"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- SERVE AT COURT ----
+    "Serve at Court": {
+        "steps": [
+            {
+                "id": "court_role",
+                "label": "Tu Rol en la Corte",
+                "options": [
+                    {"name": "Consejero del Rey", "weight": 4, "desc": "Asesoras al monarca en decisiones criticas.",
+                     "stat_weight": {"Intelligence": 1.5, "Charisma": 1.3},
+                     "next": "court_intrigue", "effects": {"_role": "consejero", "_court_difficulty": 5}},
+                    {"name": "Embajador Diplomatico", "weight": 4, "desc": "Representas la corona ante facciones extranjeras.",
+                     "stat_weight": {"Charisma": 1.6}, "skill_bonus": {"Persuasion": 2.0},
+                     "next": "court_intrigue", "effects": {"_role": "embajador", "_court_difficulty": 5}},
+                    {"name": "Espia de la Corte", "weight": 3, "desc": "Vigilas y descubres conspiraciones.",
+                     "stat_weight": {"Agility": 1.3, "Intelligence": 1.3}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "court_intrigue", "effects": {"_role": "espia", "_court_difficulty": 6}},
+                    {"name": "Organizador de Eventos", "weight": 4, "desc": "Planificas banquetes y ceremonias.",
+                     "stat_weight": {"Charisma": 1.4},
+                     "next": "court_intrigue", "effects": {"_role": "organizador", "_court_difficulty": 3}},
+                    {"name": "Guardia Personal", "weight": 3, "desc": "Proteges la vida del monarca.",
+                     "stat_weight": {"Strength": 1.4, "Agility": 1.3},
+                     "next": "court_intrigue", "effects": {"_role": "guardia", "_court_difficulty": 5}}
+                ]
+            },
+            {
+                "id": "court_intrigue",
+                "label": "Intrigas de la Corte",
+                "options": [
+                    {"name": "Conspiracion Descubierta", "weight": 4, "desc": "Descubres un complot contra el rey.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "court_result", "effects": {"_intrigue": "conspiracion"}},
+                    {"name": "Rival Politico", "weight": 5, "desc": "Un noble poderoso te desafia.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "court_result", "effects": {"_intrigue": "rival"}},
+                    {"name": "Oferta de Soborno", "weight": 4, "desc": "Te ofrecen oro a cambio de traicion.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "court_result", "effects": {"_intrigue": "soborno"}},
+                    {"name": "Romance Prohibido", "weight": 3, "desc": "Te involucras emocionalmente con alguien poderoso.",
+                     "stat_weight": {"Charisma": 1.5},
+                     "next": "court_result", "effects": {"_intrigue": "romance"}}
+                ]
+            },
+            {
+                "id": "court_result",
+                "label": "Resultado en la Corte",
+                "stat_check": "Charisma",
+                "difficulty_key": "_court_difficulty",
+                "options": [
+                    {"name": "Favor del Rey", "weight": 3, "desc": "El monarca te recompensa con poder y tierras.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Charisma", "gain_wealth": True, "rep": {"The Crown": 4}}},
+                    {"name": "Reconocimiento Publico", "weight": 5, "desc": "Tu trabajo es reconocido positivamente.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"The Crown": 2}, "gain_wealth": True}},
+                    {"name": "Pasas Desapercibido", "weight": 4, "desc": "Tu servicio no impresiona a nadie.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Caida en Desgracia", "weight": 2, "desc": "Caes en una trampa politica y pierdes todo.",
+                     "success_tier": "fail",
+                     "effects": {"lose_wealth": True, "stat_damage": 1, "rep": {"The Crown": -3}, "add_condition": "disgraced"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- ATTEMPT APOTHEOSIS ----
+    "Attempt Apotheosis": {
+        "steps": [
+            {
+                "id": "path_to_godhood",
+                "label": "Camino a la Divinidad",
+                "options": [
+                    {"name": "Ritual Supremo", "weight": 4, "desc": "Un ritual milenario para ascender.",
+                     "stat_weight": {"Intelligence": 1.6},
+                     "next": "apotheosis_trial", "effects": {"_path": "ritual", "_apo_difficulty": 8}},
+                    {"name": "Absorber Poder Divino", "weight": 3, "desc": "Intentas robar poder a un dios menor.",
+                     "stat_weight": {"Strength": 1.3, "Intelligence": 1.4},
+                     "next": "apotheosis_trial", "effects": {"_path": "absorcion", "_apo_difficulty": 9}},
+                    {"name": "Sacrificio de Seguidores", "weight": 3, "desc": "El poder de las almas como combustible.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "apotheosis_trial", "effects": {"_path": "sacrificio", "_apo_difficulty": 7, "rep": {"Church of Light": -3}}},
+                    {"name": "Prueba de los Dioses", "weight": 2, "desc": "Los dioses mismos te someten a pruebas.",
+                     "stat_weight": {"Durability": 1.4, "Intelligence": 1.3},
+                     "next": "apotheosis_trial", "effects": {"_path": "prueba", "_apo_difficulty": 10}}
+                ]
+            },
+            {
+                "id": "apotheosis_trial",
+                "label": "Prueba Final de Ascension",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_apo_difficulty",
+                "options": [
+                    {"name": "Ascendes a la Divinidad!", "weight": 1, "desc": "Te conviertes en un nuevo dios. Tu leyenda es eterna.",
+                     "success_tier": "high",
+                     "effects": {"terminal": "victory"}},
+                    {"name": "Semidivinidad", "weight": 3, "desc": "No llegas a dios, pero ganas poder inmenso.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 3, "add_condition": "semidivine", "rep": {"Mages Circle": 3, "Church of Light": -2}}},
+                    {"name": "Fallo Monumental", "weight": 4, "desc": "Tu cuerpo no puede contener tanto poder.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 3, "add_condition": "cursed"}},
+                    {"name": "Destruccion Total", "weight": 3, "desc": "El intento te consume completamente.",
+                     "success_tier": "fail",
+                     "effects": {"terminal": "death"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- EVENT CHAINS ----
+
+    # ---- BANDIT RAID ----
+    "Bandit Raid": {
+        "steps": [
+            {
+                "id": "raid_response",
+                "label": "Respuesta al Asalto",
+                "options": [
+                    {"name": "Defender la Posicion", "weight": 5, "desc": "Te atrincheras y luchas.",
+                     "stat_weight": {"Strength": 1.4, "Durability": 1.3},
+                     "next": "raid_result", "effects": {"_response": "defender"}},
+                    {"name": "Contraataque Sorpresa", "weight": 4, "desc": "Les das la vuelta con un ataque inesperado.",
+                     "stat_weight": {"Agility": 1.4, "Intelligence": 1.2}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "raid_result", "effects": {"_response": "contraataque"}},
+                    {"name": "Negociar con el Lider", "weight": 3, "desc": "Intentas hablar con el jefe bandido.",
+                     "stat_weight": {"Charisma": 1.6}, "skill_bonus": {"Persuasion": 1.5},
+                     "next": "raid_result", "effects": {"_response": "negociar"}},
+                    {"name": "Organizar a los Civiles", "weight": 4, "desc": "Organizas la defensa del pueblo.",
+                     "stat_weight": {"Charisma": 1.3, "Intelligence": 1.2},
+                     "next": "raid_result", "effects": {"_response": "organizar"}}
+                ]
+            },
+            {
+                "id": "raid_result",
+                "label": "Resultado del Asalto",
+                "stat_check": "Strength",
+                "options": [
+                    {"name": "Bandidos Derrotados", "weight": 3, "desc": "Los bandidos huyen derrotados.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "gain_wealth": True, "rep": {"The Crown": 2, "Hunters Lodge": 1}}},
+                    {"name": "Victoria con Bajas", "weight": 5, "desc": "Ganas, pero hay perdidas considerables.",
+                     "success_tier": "mid",
+                     "effects": {"stat_damage": 1, "rep": {"The Crown": 1}}},
+                    {"name": "Empate Sangriento", "weight": 4, "desc": "Ambos bandos sufren, nadie gana claramente.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1}},
+                    {"name": "Saqueo Total", "weight": 2, "desc": "Los bandidos arrasan con todo.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "lose_wealth": True, "rep": {"The Crown": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- DRAGON SIGHTING ----
+    "Dragon Sighting": {
+        "steps": [
+            {
+                "id": "dragon_approach",
+                "label": "Como Enfrentar al Dragon",
+                "options": [
+                    {"name": "Cazar al Dragon", "weight": 4, "desc": "Intentas abatir a la bestia legendaria.",
+                     "stat_weight": {"Strength": 1.5, "Durability": 1.3},
+                     "next": "dragon_result", "effects": {"_approach": "cazar", "_dragon_difficulty": 9}},
+                    {"name": "Negociar con el Dragon", "weight": 3, "desc": "Los dragones son inteligentes. Intentas hablar.",
+                     "stat_weight": {"Charisma": 1.4, "Intelligence": 1.3},
+                     "next": "dragon_result", "effects": {"_approach": "negociar", "_dragon_difficulty": 7}},
+                    {"name": "Evacuar la Zona", "weight": 5, "desc": "Organizas la evacuacion de la region.",
+                     "stat_weight": {"Charisma": 1.3, "Intelligence": 1.2},
+                     "next": "dragon_result", "effects": {"_approach": "evacuar", "_dragon_difficulty": 4}},
+                    {"name": "Buscar su Guarida", "weight": 3, "desc": "Buscas su nido para encontrar tesoros.",
+                     "stat_weight": {"Agility": 1.4, "Intelligence": 1.3}, "skill_bonus": {"Tracking": 2.0, "Stealth": 1.5},
+                     "next": "dragon_result", "effects": {"_approach": "guarida", "_dragon_difficulty": 8}}
+                ]
+            },
+            {
+                "id": "dragon_result",
+                "label": "Resultado del Encuentro",
+                "stat_check": "Strength",
+                "difficulty_key": "_dragon_difficulty",
+                "options": [
+                    {"name": "Triunfo Legendario", "weight": 2, "desc": "Logras lo imposible. Tu nombre sera recordado.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 3, "add_random_item": True, "rep": {"Hunters Lodge": 4, "The Crown": 2}}},
+                    {"name": "Exito Parcial", "weight": 4, "desc": "No es perfecto, pero sobrevives con ganancias.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "rep": {"Hunters Lodge": 1}}},
+                    {"name": "Retirada Necesaria", "weight": 4, "desc": "El dragon es demasiado. Apenas escapas.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1, "add_condition": "dragon_fear"}},
+                    {"name": "Calcinado", "weight": 2, "desc": "El fuego del dragon te alcanza de lleno.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 3, "add_condition": "burned"}},
+                    {"name": "Devorado", "weight": 1, "desc": "El dragon te consume entero.",
+                     "success_tier": "fail",
+                     "effects": {"terminal": "death"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- DEMONIC RIFT ----
+    "Demonic Rift": {
+        "steps": [
+            {
+                "id": "rift_response",
+                "label": "Respuesta al Portal",
+                "options": [
+                    {"name": "Cerrar el Portal", "weight": 4, "desc": "Intentas sellar la grieta dimensional.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "rift_result", "effects": {"_response": "cerrar", "_rift_difficulty": 7}},
+                    {"name": "Combatir Demonios", "weight": 5, "desc": "Luchas contra las criaturas que emergen.",
+                     "stat_weight": {"Strength": 1.5, "Durability": 1.3},
+                     "next": "rift_result", "effects": {"_response": "combatir", "_rift_difficulty": 6}},
+                    {"name": "Aprovechar su Poder", "weight": 3, "desc": "Absorbes energia del portal.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "rift_result", "effects": {"_response": "absorber", "_rift_difficulty": 8}},
+                    {"name": "Evacuar y Vigilar", "weight": 4, "desc": "Alejas a la gente y observas.",
+                     "stat_weight": {"Intelligence": 1.2, "Charisma": 1.2},
+                     "next": "rift_result", "effects": {"_response": "vigilar", "_rift_difficulty": 3}}
+                ]
+            },
+            {
+                "id": "rift_result",
+                "label": "Resultado del Portal",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_rift_difficulty",
+                "options": [
+                    {"name": "Portal Sellado", "weight": 3, "desc": "El portal se cierra. La amenaza termina.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "rep": {"Church of Light": 3, "Mages Circle": 2}}},
+                    {"name": "Contencion Parcial", "weight": 4, "desc": "Reduces la amenaza pero el portal persiste.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "add_condition": "rift_unstable", "rep": {"Church of Light": 1}}},
+                    {"name": "Contaminacion Oscura", "weight": 3, "desc": "La energia demoniaca te afecta.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1, "add_condition": "corrupted"}},
+                    {"name": "Explosion Infernal", "weight": 2, "desc": "El portal explota en energia caosica.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 3, "rep": {"Church of Light": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- MERCHANT GUILD OFFER ----
+    "Merchant Guild Offer": {
+        "steps": [
+            {
+                "id": "offer_type",
+                "label": "Tipo de Oferta",
+                "options": [
+                    {"name": "Contrato Comercial", "weight": 5, "desc": "Una ruta comercial lucrativa.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "offer_result", "effects": {"_offer": "contrato", "_offer_difficulty": 4}},
+                    {"name": "Mision de Escolta", "weight": 4, "desc": "Proteger un envio valioso.",
+                     "stat_weight": {"Strength": 1.3},
+                     "next": "offer_result", "effects": {"_offer": "escolta", "_offer_difficulty": 5}},
+                    {"name": "Inversion Arriesgada", "weight": 3, "desc": "Una apuesta financiera con grandes retornos.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "offer_result", "effects": {"_offer": "inversion", "_offer_difficulty": 5}},
+                    {"name": "Eliminar Competencia", "weight": 3, "desc": "Trabajo sucio contra rivales del gremio.",
+                     "stat_weight": {"Agility": 1.3}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "offer_result", "effects": {"_offer": "eliminar", "_offer_difficulty": 6}}
+                ]
+            },
+            {
+                "id": "offer_result",
+                "label": "Resultado de la Oferta",
+                "stat_check": "Charisma",
+                "difficulty_key": "_offer_difficulty",
+                "options": [
+                    {"name": "Gran Beneficio", "weight": 3, "desc": "El negocio sale redondo. Ganancias excelentes.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "stat_boost": 1, "rep": {"Merchant Guild": 3}}},
+                    {"name": "Beneficio Moderado", "weight": 5, "desc": "Ganas algo, pero no tanto como esperabas.",
+                     "success_tier": "mid",
+                     "effects": {"gain_wealth": True, "rep": {"Merchant Guild": 1}}},
+                    {"name": "Sin Ganancias", "weight": 4, "desc": "El trato no lleva a nada concreto.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Estafa del Gremio", "weight": 2, "desc": "Te usan como peon desechable.",
+                     "success_tier": "fail",
+                     "effects": {"lose_wealth": True, "stat_damage": 1, "rep": {"Merchant Guild": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- NOBLE SUMMONS ----
+    "Noble Summons": {
+        "steps": [
+            {
+                "id": "summons_mission",
+                "label": "Mision de la Nobleza",
+                "options": [
+                    {"name": "Escoltar al Heredero", "weight": 4, "desc": "Proteger al heredero en un viaje peligroso.",
+                     "stat_weight": {"Strength": 1.3, "Agility": 1.2},
+                     "next": "summons_result", "effects": {"_mission": "escolta", "_summons_difficulty": 5}},
+                    {"name": "Negociacion Diplomatica", "weight": 4, "desc": "Representar la casa noble en negociaciones.",
+                     "stat_weight": {"Charisma": 1.5}, "skill_bonus": {"Persuasion": 2.0},
+                     "next": "summons_result", "effects": {"_mission": "diplomacia", "_summons_difficulty": 5}},
+                    {"name": "Investigar Traicion", "weight": 3, "desc": "Descubrir un traidor entre la nobleza.",
+                     "stat_weight": {"Intelligence": 1.4}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "summons_result", "effects": {"_mission": "traicion", "_summons_difficulty": 6}},
+                    {"name": "Recuperar Reliquia Familiar", "weight": 3, "desc": "Encontrar un tesoro ancestral robado.",
+                     "stat_weight": {"Agility": 1.3, "Intelligence": 1.2},
+                     "next": "summons_result", "effects": {"_mission": "reliquia", "_summons_difficulty": 6}}
+                ]
+            },
+            {
+                "id": "summons_result",
+                "label": "Resultado de la Mision",
+                "stat_check": "Charisma",
+                "difficulty_key": "_summons_difficulty",
+                "options": [
+                    {"name": "Recompensa Real", "weight": 3, "desc": "La nobleza te recompensa generosamente.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "stat_boost": 1, "rep": {"The Crown": 3}}},
+                    {"name": "Mision Cumplida", "weight": 5, "desc": "Completas la tarea satisfactoriamente.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"The Crown": 2}}},
+                    {"name": "Resultado Mediocre", "weight": 4, "desc": "La nobleza no esta impresionada.",
+                     "success_tier": "low",
+                     "effects": {"rep": {"The Crown": -1}}},
+                    {"name": "Fracaso Deshonroso", "weight": 2, "desc": "Fallas y la nobleza te castiga.",
+                     "success_tier": "fail",
+                     "effects": {"lose_wealth": True, "stat_damage": 1, "rep": {"The Crown": -3}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- CULT WHISPER ----
+    "Cult Whisper": {
+        "steps": [
+            {
+                "id": "cult_response",
+                "label": "Respuesta al Culto",
+                "options": [
+                    {"name": "Unirse al Culto", "weight": 4, "desc": "Aceptas sus enseñanzas oscuras.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "cult_result", "effects": {"_response": "unirse", "_cult_difficulty": 4}},
+                    {"name": "Infiltrarse como Espia", "weight": 4, "desc": "Finges unirte para descubrir sus planes.",
+                     "stat_weight": {"Charisma": 1.4, "Agility": 1.2}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "cult_result", "effects": {"_response": "infiltrar", "_cult_difficulty": 6}},
+                    {"name": "Denunciar al Culto", "weight": 3, "desc": "Alertas a las autoridades.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "cult_result", "effects": {"_response": "denunciar", "_cult_difficulty": 3}},
+                    {"name": "Robar sus Secretos", "weight": 3, "desc": "Tomas sus textos y huyes.",
+                     "stat_weight": {"Agility": 1.5}, "skill_bonus": {"Stealth": 2.0, "Lockpicking": 1.5},
+                     "next": "cult_result", "effects": {"_response": "robar", "_cult_difficulty": 5}}
+                ]
+            },
+            {
+                "id": "cult_result",
+                "label": "Resultado con el Culto",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_cult_difficulty",
+                "options": [
+                    {"name": "Poder Oscuro Obtenido", "weight": 3, "desc": "Ganas conocimiento y poder prohibido.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "rep": {"Shadow Council": 3, "Church of Light": -2}}},
+                    {"name": "Secretos Revelados", "weight": 4, "desc": "Descubres informacion importante.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "add_condition": "cult_knowledge", "rep": {"Shadow Council": 1}}},
+                    {"name": "Nada Util", "weight": 4, "desc": "El culto resulta ser un fraude.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Maldicion del Culto", "weight": 3, "desc": "El culto te maldice por inmiscuirte.",
+                     "success_tier": "fail",
+                     "effects": {"add_condition": "cursed", "stat_damage": 1, "rep": {"Shadow Council": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- ASSASSINATION ATTEMPT ----
+    "Assassination Attempt": {
+        "steps": [
+            {
+                "id": "attack_response",
+                "label": "Reaccion al Ataque",
+                "options": [
+                    {"name": "Contraatacar", "weight": 5, "desc": "Te defiendes y atacas al asesino.",
+                     "stat_weight": {"Strength": 1.5, "Agility": 1.3},
+                     "next": "assassination_result", "effects": {"_response": "contraatacar"}},
+                    {"name": "Esquivar y Huir", "weight": 4, "desc": "Te alejas del peligro rapidamente.",
+                     "stat_weight": {"Agility": 1.6}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "assassination_result", "effects": {"_response": "huir"}},
+                    {"name": "Usar Magia Defensiva", "weight": 3, "desc": "Invocas proteccion magica.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "assassination_result", "effects": {"_response": "magia"}},
+                    {"name": "Negociar con el Asesino", "weight": 3, "desc": "Intentas comprar tu vida.",
+                     "stat_weight": {"Charisma": 1.5},
+                     "next": "assassination_result", "effects": {"_response": "negociar"}}
+                ]
+            },
+            {
+                "id": "assassination_result",
+                "label": "Resultado del Atentado",
+                "stat_check": "Agility",
+                "options": [
+                    {"name": "Asesino Capturado", "weight": 3, "desc": "Capturas al asesino y descubres quien lo envio.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "add_condition": "knows_enemy", "rep": {"The Crown": 2}}},
+                    {"name": "Sobrevives Ileso", "weight": 4, "desc": "Escapas sin heridas graves.",
+                     "success_tier": "mid",
+                     "effects": {"add_condition": "assassination_survivor"}},
+                    {"name": "Herido pero Vivo", "weight": 4, "desc": "El ataque te deja herido.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1, "add_condition": "wounded"}},
+                    {"name": "Herida Mortal", "weight": 2, "desc": "El veneno del asesino es letal.",
+                     "success_tier": "fail",
+                     "effects": {"terminal": "death"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- SHADOW MARKET ----
+    "Shadow Market": {
+        "steps": [
+            {
+                "id": "market_action",
+                "label": "Accion en el Mercado Negro",
+                "options": [
+                    {"name": "Comprar Artefactos", "weight": 5, "desc": "Buscas objetos raros y prohibidos.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Investigation": 1.3},
+                     "next": "market_result", "effects": {"_action": "comprar"}},
+                    {"name": "Vender Informacion", "weight": 4, "desc": "Vendes secretos al mejor postor.",
+                     "stat_weight": {"Charisma": 1.4},
+                     "next": "market_result", "effects": {"_action": "vender"}},
+                    {"name": "Buscar Contactos", "weight": 4, "desc": "Amplias tu red de informantes.",
+                     "stat_weight": {"Charisma": 1.3}, "skill_bonus": {"Persuasion": 1.5},
+                     "next": "market_result", "effects": {"_action": "contactos"}},
+                    {"name": "Robar a los Vendedores", "weight": 3, "desc": "Intentas robar mercancia.",
+                     "stat_weight": {"Agility": 1.5}, "skill_bonus": {"Stealth": 2.0, "Lockpicking": 1.5},
+                     "next": "market_result", "effects": {"_action": "robar"}}
+                ]
+            },
+            {
+                "id": "market_result",
+                "label": "Resultado del Mercado Negro",
+                "stat_check": "Charisma",
+                "options": [
+                    {"name": "Gran Negocio", "weight": 3, "desc": "Consigues exactamente lo que buscabas.",
+                     "success_tier": "high",
+                     "effects": {"add_random_item": True, "gain_wealth": True, "rep": {"Thieves Guild": 2}}},
+                    {"name": "Trato Aceptable", "weight": 5, "desc": "No es perfecto pero sirve.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True, "rep": {"Thieves Guild": 1}}},
+                    {"name": "Sin Suerte", "weight": 4, "desc": "No encuentras nada interesante.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Trampa!", "weight": 2, "desc": "Era una trampa de la guardia o de criminales.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "lose_wealth": True, "rep": {"Thieves Guild": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- TRIAL BY COMBAT ----
+    "Trial by Combat": {
+        "steps": [
+            {
+                "id": "trial_preparation",
+                "label": "Preparacion para el Duelo",
+                "options": [
+                    {"name": "Aceptar el Desafio", "weight": 5, "desc": "Luchas tu mismo con honor.",
+                     "stat_weight": {"Strength": 1.5, "Durability": 1.3},
+                     "next": "trial_result", "effects": {"_prep": "personal", "_trial_difficulty": 5}},
+                    {"name": "Buscar un Campeon", "weight": 4, "desc": "Contratas a un luchador profesional.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "trial_result", "effects": {"_prep": "campeon", "_trial_difficulty": 4, "lose_wealth": True}},
+                    {"name": "Entrenar Intensamente", "weight": 4, "desc": "Dedicas tiempo a prepararte.",
+                     "stat_weight": {"Strength": 1.3, "Agility": 1.2},
+                     "next": "trial_result", "effects": {"_prep": "entrenar", "_trial_difficulty": 4}},
+                    {"name": "Trucos Sucios", "weight": 3, "desc": "Envenenas el arma o sobornas al juez.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Stealth": 1.5},
+                     "next": "trial_result", "effects": {"_prep": "truco", "_trial_difficulty": 3}}
+                ]
+            },
+            {
+                "id": "trial_result",
+                "label": "Resultado del Juicio",
+                "stat_check": "Strength",
+                "difficulty_key": "_trial_difficulty",
+                "options": [
+                    {"name": "Victoria Heroica", "weight": 3, "desc": "Ganas el duelo con honor y gloria.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "rep": {"Hunters Lodge": 2, "The Crown": 2}}},
+                    {"name": "Victoria Ajustada", "weight": 5, "desc": "Ganas por poco. Mantenes tu honor.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"The Crown": 1}}},
+                    {"name": "Derrota Honrosa", "weight": 4, "desc": "Pierdes pero con dignidad.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1, "rep": {"The Crown": -1}}},
+                    {"name": "Derrota Humillante", "weight": 2, "desc": "Pierdes vergonzosamente.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "rep": {"Hunters Lodge": -2, "The Crown": -2}}},
+                    {"name": "Muerte en el Duelo", "weight": 1, "desc": "Tu oponente te asesta un golpe mortal.",
+                     "success_tier": "fail",
+                     "effects": {"terminal": "death"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- FORBIDDEN LIBRARY ----
+    "Forbidden Library": {
+        "steps": [
+            {
+                "id": "library_action",
+                "label": "Accion en la Biblioteca",
+                "options": [
+                    {"name": "Estudiar Textos Arcanos", "weight": 5, "desc": "Lees los textos prohibidos.",
+                     "stat_weight": {"Intelligence": 1.5}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "library_result", "effects": {"_action": "estudiar", "_lib_difficulty": 5}},
+                    {"name": "Robar Grimorios", "weight": 4, "desc": "Te llevas los libros mas valiosos.",
+                     "stat_weight": {"Agility": 1.4}, "skill_bonus": {"Stealth": 1.5, "Lockpicking": 1.5},
+                     "next": "library_result", "effects": {"_action": "robar", "_lib_difficulty": 5}},
+                    {"name": "Buscar Hechizo Especifico", "weight": 4, "desc": "Buscas un conjuro concreto.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "library_result", "effects": {"_action": "buscar", "_lib_difficulty": 6}},
+                    {"name": "Copiar Mapas Antiguos", "weight": 3, "desc": "Copias cartografia secreta.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "library_result", "effects": {"_action": "copiar", "_lib_difficulty": 3}}
+                ]
+            },
+            {
+                "id": "library_result",
+                "label": "Resultado en la Biblioteca",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_lib_difficulty",
+                "options": [
+                    {"name": "Conocimiento Supremo", "weight": 3, "desc": "Descubres secretos que cambian todo.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Intelligence", "stat_boost": 1, "add_random_item": True, "rep": {"Mages Circle": 3}}},
+                    {"name": "Buenos Hallazgos", "weight": 5, "desc": "Encuentras informacion valiosa.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost_specific": "Intelligence", "rep": {"Mages Circle": 1}}},
+                    {"name": "Textos Ilegibles", "weight": 4, "desc": "No logras descifrar los textos.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Guardian de la Biblioteca", "weight": 2, "desc": "Un guardian magico te ataca.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "rep": {"Mages Circle": -1}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- ELVEN ENVOY ----
+    "Elven Envoy": {
+        "steps": [
+            {
+                "id": "envoy_request",
+                "label": "Peticion del Emisario",
+                "options": [
+                    {"name": "Alianza Militar", "weight": 4, "desc": "Los elfos buscan aliados contra una amenaza.",
+                     "stat_weight": {"Charisma": 1.3, "Strength": 1.2},
+                     "next": "envoy_result", "effects": {"_request": "alianza"}},
+                    {"name": "Intercambio de Conocimiento", "weight": 4, "desc": "Ofrecen sabiduria a cambio de ayuda.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "envoy_result", "effects": {"_request": "conocimiento"}},
+                    {"name": "Recuperar Reliquia Elfica", "weight": 3, "desc": "Un artefacto elfico fue robado.",
+                     "stat_weight": {"Agility": 1.3}, "skill_bonus": {"Tracking": 1.5},
+                     "next": "envoy_result", "effects": {"_request": "reliquia"}},
+                    {"name": "Rechazar al Emisario", "weight": 3, "desc": "No te interesan los asuntos elficos.",
+                     "effects": {"rep": {"Mages Circle": -1}}}
+                ]
+            },
+            {
+                "id": "envoy_result",
+                "label": "Resultado con los Elfos",
+                "stat_check": "Charisma",
+                "options": [
+                    {"name": "Alianza Sellada", "weight": 3, "desc": "Los elfos se convierten en aliados fieles.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "add_condition": "elven_ally", "rep": {"Mages Circle": 2}}},
+                    {"name": "Cooperacion Limitada", "weight": 5, "desc": "Ayudan pero con reservas.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"Mages Circle": 1}}},
+                    {"name": "Desconfianza Mutua", "weight": 4, "desc": "No se llega a ningun acuerdo.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Ofensa Diplomatica", "weight": 2, "desc": "Insultas a los elfos sin querer.",
+                     "success_tier": "fail",
+                     "effects": {"rep": {"Mages Circle": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- DWARVEN FORGE FIRE ----
+    "Dwarven Forge Fire": {
+        "steps": [
+            {
+                "id": "forge_help",
+                "label": "Ayuda en la Forja",
+                "options": [
+                    {"name": "Ayudar con la Forja", "weight": 5, "desc": "Trabajas junto a los enanos.",
+                     "stat_weight": {"Strength": 1.4}, "skill_bonus": {"Smithing": 2.5},
+                     "next": "forge_result", "effects": {"_help": "forjar"}},
+                    {"name": "Conseguir Materiales", "weight": 4, "desc": "Buscas materiales raros que necesitan.",
+                     "stat_weight": {"Agility": 1.3}, "skill_bonus": {"Tracking": 1.5},
+                     "next": "forge_result", "effects": {"_help": "materiales"}},
+                    {"name": "Proteger la Forja", "weight": 4, "desc": "Defiendes la forja de saboteadores.",
+                     "stat_weight": {"Strength": 1.3, "Durability": 1.2},
+                     "next": "forge_result", "effects": {"_help": "proteger"}},
+                    {"name": "Aportar Magia", "weight": 3, "desc": "Usas magia para potenciar la forja.",
+                     "stat_weight": {"Intelligence": 1.5}, "requires_magic": True,
+                     "next": "forge_result", "effects": {"_help": "magia"}}
+                ]
+            },
+            {
+                "id": "forge_result",
+                "label": "Resultado en la Forja Enana",
+                "stat_check": "Strength",
+                "options": [
+                    {"name": "Arma Legendaria", "weight": 3, "desc": "Los enanos te regalan una obra maestra.",
+                     "success_tier": "high",
+                     "effects": {"add_random_item": True, "stat_boost": 1, "rep": {"Merchant Guild": 2, "Hunters Lodge": 1}}},
+                    {"name": "Buen Trabajo", "weight": 5, "desc": "Los enanos estan satisfechos.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True, "rep": {"Merchant Guild": 1}}},
+                    {"name": "Trabajo Mediocre", "weight": 4, "desc": "No cumples las expectativas enanas.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Desastre en la Forja", "weight": 2, "desc": "Causas un accidente que daña la forja.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "rep": {"Merchant Guild": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- PLAGUE SIGNS ----
+    "Plague Signs": {
+        "steps": [
+            {
+                "id": "plague_response",
+                "label": "Respuesta a la Plaga",
+                "options": [
+                    {"name": "Curar a los Enfermos", "weight": 5, "desc": "Dedicas tu esfuerzo a sanar.",
+                     "stat_weight": {"Intelligence": 1.3}, "skill_bonus": {"Medicine": 2.0},
+                     "next": "plague_result", "effects": {"_response": "curar", "_plague_difficulty": 5}},
+                    {"name": "Buscar el Origen", "weight": 4, "desc": "Investigas la causa de la plaga.",
+                     "stat_weight": {"Intelligence": 1.5}, "skill_bonus": {"Investigation": 1.5, "Alchemy": 1.5},
+                     "next": "plague_result", "effects": {"_response": "investigar", "_plague_difficulty": 6}},
+                    {"name": "Cuarentena Estricta", "weight": 4, "desc": "Impones aislamiento total.",
+                     "stat_weight": {"Charisma": 1.3, "Intelligence": 1.2},
+                     "next": "plague_result", "effects": {"_response": "cuarentena", "_plague_difficulty": 4}},
+                    {"name": "Huir de la Zona", "weight": 3, "desc": "Escapas antes de contagiarte.",
+                     "effects": {"rep": {"Church of Light": -2}}}
+                ]
+            },
+            {
+                "id": "plague_result",
+                "label": "Resultado de la Plaga",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_plague_difficulty",
+                "options": [
+                    {"name": "Plaga Erradicada", "weight": 3, "desc": "Tu intervencion salva a cientos de vidas.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Charisma", "rep": {"Church of Light": 4}}},
+                    {"name": "Plaga Contenida", "weight": 5, "desc": "Reduces el impacto significativamente.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"Church of Light": 2}}},
+                    {"name": "Plaga Persiste", "weight": 4, "desc": "Tus esfuerzos no son suficientes.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "plague_active", "rep": {"Church of Light": -1}}},
+                    {"name": "Te Contagias", "weight": 2, "desc": "La plaga te alcanza a ti.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "sick"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- MYSTIC ECLIPSE ----
+    "Mystic Eclipse": {
+        "steps": [
+            {
+                "id": "eclipse_action",
+                "label": "Accion durante el Eclipse",
+                "options": [
+                    {"name": "Realizar un Ritual", "weight": 4, "desc": "Aprovechas el eclipse para un hechizo poderoso.",
+                     "stat_weight": {"Intelligence": 1.6}, "requires_magic": True,
+                     "next": "eclipse_result", "effects": {"_action": "ritual", "_eclipse_difficulty": 6}},
+                    {"name": "Meditar y Absorber", "weight": 4, "desc": "Absorbes la energia cosmica del eclipse.",
+                     "stat_weight": {"Intelligence": 1.3, "Durability": 1.2},
+                     "next": "eclipse_result", "effects": {"_action": "meditar", "_eclipse_difficulty": 4}},
+                    {"name": "Estudiar el Fenomeno", "weight": 5, "desc": "Observas y documentas el evento.",
+                     "stat_weight": {"Intelligence": 1.4},
+                     "next": "eclipse_result", "effects": {"_action": "estudiar", "_eclipse_difficulty": 3}},
+                    {"name": "Proteger a los Demas", "weight": 3, "desc": "Algunos enloquecen. Los proteges.",
+                     "stat_weight": {"Charisma": 1.3, "Strength": 1.2},
+                     "next": "eclipse_result", "effects": {"_action": "proteger", "_eclipse_difficulty": 4}}
+                ]
+            },
+            {
+                "id": "eclipse_result",
+                "label": "Resultado del Eclipse",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_eclipse_difficulty",
+                "options": [
+                    {"name": "Poder Cosmico", "weight": 3, "desc": "El eclipse te otorga poder increible.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "rep": {"Mages Circle": 3}}},
+                    {"name": "Iluminacion Parcial", "weight": 5, "desc": "Ganas algo de poder y conocimiento.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "rep": {"Mages Circle": 1}}},
+                    {"name": "Nada Especial", "weight": 4, "desc": "El eclipse pasa sin efecto para ti.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Locura Temporal", "weight": 2, "desc": "La energia te afecta mentalmente.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "add_condition": "mentally_unstable"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- LOST HEIR ----
+    "Lost Heir": {
+        "steps": [
+            {
+                "id": "heir_decision",
+                "label": "Decision sobre el Heredero",
+                "options": [
+                    {"name": "Proteger al Heredero", "weight": 5, "desc": "Lo escoltas y proteges.",
+                     "stat_weight": {"Strength": 1.3, "Charisma": 1.2},
+                     "next": "heir_result", "effects": {"_decision": "proteger"}},
+                    {"name": "Vender al Heredero", "weight": 3, "desc": "Lo entregas al mejor postor.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "heir_result", "effects": {"_decision": "vender"}},
+                    {"name": "Usar como Peon Politico", "weight": 4, "desc": "Lo usas para tus propios fines.",
+                     "stat_weight": {"Intelligence": 1.4, "Charisma": 1.3},
+                     "next": "heir_result", "effects": {"_decision": "peon"}},
+                    {"name": "Ignorar al Heredero", "weight": 3, "desc": "No es tu problema.",
+                     "effects": {}}
+                ]
+            },
+            {
+                "id": "heir_result",
+                "label": "Resultado del Heredero",
+                "stat_check": "Charisma",
+                "options": [
+                    {"name": "Recompensa Real", "weight": 3, "desc": "Tu decision te trae grandes beneficios.",
+                     "success_tier": "high",
+                     "effects": {"gain_wealth": True, "stat_boost": 1, "rep": {"The Crown": 3}}},
+                    {"name": "Reconocimiento", "weight": 5, "desc": "Tu accion es reconocida por la nobleza.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"The Crown": 1}}},
+                    {"name": "Complicaciones", "weight": 4, "desc": "Tu decision trae consecuencias inesperadas.",
+                     "success_tier": "low",
+                     "effects": {"add_condition": "political_trouble"}},
+                    {"name": "Traicion del Heredero", "weight": 2, "desc": "El heredero te traiciona.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "rep": {"The Crown": -2}}}
+                ]
+            }
+        ]
+    },
+
+    # ---- ANCIENT MAP ----
+    "Ancient Map": {
+        "steps": [
+            {
+                "id": "map_destination",
+                "label": "Destino del Mapa",
+                "options": [
+                    {"name": "Tumba Olvidada", "weight": 5, "desc": "El mapa lleva a una tumba llena de tesoros.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "map_result", "effects": {"_dest": "tumba", "_map_difficulty": 5}},
+                    {"name": "Ciudad Perdida", "weight": 3, "desc": "Una ciudad antigua oculta en la selva.",
+                     "stat_weight": {"Intelligence": 1.4, "Agility": 1.2},
+                     "next": "map_result", "effects": {"_dest": "ciudad", "_map_difficulty": 7}},
+                    {"name": "Mina Abandonada", "weight": 4, "desc": "Una mina con minerales raros.",
+                     "stat_weight": {"Strength": 1.2},
+                     "next": "map_result", "effects": {"_dest": "mina", "_map_difficulty": 4}},
+                    {"name": "Santuario Secreto", "weight": 3, "desc": "Un templo oculto con poder arcano.",
+                     "stat_weight": {"Intelligence": 1.4}, "requires_magic": True,
+                     "next": "map_result", "effects": {"_dest": "santuario", "_map_difficulty": 6}}
+                ]
+            },
+            {
+                "id": "map_result",
+                "label": "Resultado de la Expedicion",
+                "stat_check": "Intelligence",
+                "difficulty_key": "_map_difficulty",
+                "options": [
+                    {"name": "Tesoro Legendario", "weight": 2, "desc": "Encuentras riquezas inimaginables.",
+                     "success_tier": "high",
+                     "effects": {"add_random_item": True, "gain_wealth": True, "stat_boost": 2, "rep": {"Mages Circle": 2}}},
+                    {"name": "Buen Botin", "weight": 5, "desc": "Encuentras objetos valiosos.",
+                     "success_tier": "mid",
+                     "effects": {"add_random_item": True, "rep": {"Mages Circle": 1}}},
+                    {"name": "Lugar Saqueado", "weight": 4, "desc": "Alguien llego antes que tu.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Trampa Mortal", "weight": 3, "desc": "El mapa era una trampa elaborada.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 2, "add_condition": "wounded"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- HERETICAL SERMON ----
+    "Heretical Sermon": {
+        "steps": [
+            {
+                "id": "sermon_response",
+                "label": "Respuesta al Sermon",
+                "options": [
+                    {"name": "Apoyar al Hereje", "weight": 4, "desc": "Sus palabras resuenan contigo.",
+                     "stat_weight": {"Charisma": 1.3},
+                     "next": "sermon_result", "effects": {"_response": "apoyar"}},
+                    {"name": "Denunciar al Hereje", "weight": 4, "desc": "Alertas a la Iglesia.",
+                     "stat_weight": {"Charisma": 1.2},
+                     "next": "sermon_result", "effects": {"_response": "denunciar"}},
+                    {"name": "Debatir Publicamente", "weight": 3, "desc": "Lo desafias intelectualmente.",
+                     "stat_weight": {"Intelligence": 1.4, "Charisma": 1.4},
+                     "next": "sermon_result", "effects": {"_response": "debatir"}},
+                    {"name": "Escuchar en Secreto", "weight": 4, "desc": "Observas desde las sombras.",
+                     "stat_weight": {"Agility": 1.2}, "skill_bonus": {"Stealth": 1.3},
+                     "next": "sermon_result", "effects": {"_response": "escuchar"}}
+                ]
+            },
+            {
+                "id": "sermon_result",
+                "label": "Resultado del Sermon",
+                "stat_check": "Charisma",
+                "options": [
+                    {"name": "Influencia Ganada", "weight": 3, "desc": "Tu posicion te gana seguidores.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost_specific": "Charisma", "rep": {"Church of Light": 2}}},
+                    {"name": "Reconocimiento", "weight": 5, "desc": "La gente nota tu intervencion.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"Church of Light": 1}}},
+                    {"name": "Ignorado", "weight": 4, "desc": "Nadie presta atencion.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Acusado de Hereje", "weight": 2, "desc": "Te acusan de herejia a ti tambien.",
+                     "success_tier": "fail",
+                     "effects": {"rep": {"Church of Light": -3}, "add_condition": "heretic_accused"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- BEAST STAMPEDE ----
+    "Beast Stampede": {
+        "steps": [
+            {
+                "id": "stampede_action",
+                "label": "Accion ante la Estampida",
+                "options": [
+                    {"name": "Desviar la Estampida", "weight": 4, "desc": "Intentas redirigir a las bestias.",
+                     "stat_weight": {"Intelligence": 1.3, "Agility": 1.3}, "skill_bonus": {"Beast Taming": 2.0},
+                     "next": "stampede_result", "effects": {"_action": "desviar"}},
+                    {"name": "Cazar las Bestias", "weight": 4, "desc": "Abates a las criaturas mas peligrosas.",
+                     "stat_weight": {"Strength": 1.5}, "skill_bonus": {"Tracking": 1.5},
+                     "next": "stampede_result", "effects": {"_action": "cazar"}},
+                    {"name": "Proteger al Pueblo", "weight": 5, "desc": "Organizas la defensa del asentamiento.",
+                     "stat_weight": {"Charisma": 1.3, "Strength": 1.2},
+                     "next": "stampede_result", "effects": {"_action": "proteger"}},
+                    {"name": "Huir a Terreno Alto", "weight": 4, "desc": "Escapas a un lugar seguro.",
+                     "stat_weight": {"Agility": 1.4},
+                     "next": "stampede_result", "effects": {"_action": "huir"}}
+                ]
+            },
+            {
+                "id": "stampede_result",
+                "label": "Resultado de la Estampida",
+                "stat_check": "Strength",
+                "options": [
+                    {"name": "Bestias Controladas", "weight": 3, "desc": "Logras detener la estampida.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 1, "rep": {"Hunters Lodge": 3}}},
+                    {"name": "Danos Minimizados", "weight": 5, "desc": "Reduces el impacto considerablemente.",
+                     "success_tier": "mid",
+                     "effects": {"rep": {"Hunters Lodge": 1}}},
+                    {"name": "Danos Severos", "weight": 4, "desc": "La estampida causa destruccion.",
+                     "success_tier": "low",
+                     "effects": {"stat_damage": 1}},
+                    {"name": "Arrasado", "weight": 2, "desc": "Las bestias te pasan por encima.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 3, "add_condition": "wounded"}}
+                ]
+            }
+        ]
+    },
+
+    # ---- ORACLE VISION ----
+    "Oracle Vision": {
+        "steps": [
+            {
+                "id": "vision_interpretation",
+                "label": "Interpretacion de la Vision",
+                "options": [
+                    {"name": "Aceptar el Destino", "weight": 4, "desc": "Sigues lo que la vision muestra.",
+                     "stat_weight": {"Intelligence": 1.3},
+                     "next": "vision_result", "effects": {"_interpretation": "aceptar"}},
+                    {"name": "Desafiar la Profecia", "weight": 4, "desc": "Intentas cambiar lo que fue visto.",
+                     "stat_weight": {"Charisma": 1.3, "Durability": 1.2},
+                     "next": "vision_result", "effects": {"_interpretation": "desafiar"}},
+                    {"name": "Buscar Mas Respuestas", "weight": 4, "desc": "Investigas el significado profundo.",
+                     "stat_weight": {"Intelligence": 1.5}, "skill_bonus": {"Investigation": 1.5},
+                     "next": "vision_result", "effects": {"_interpretation": "investigar"}},
+                    {"name": "Compartir la Vision", "weight": 3, "desc": "Cuentas lo visto a tus aliados.",
+                     "stat_weight": {"Charisma": 1.4},
+                     "next": "vision_result", "effects": {"_interpretation": "compartir"}}
+                ]
+            },
+            {
+                "id": "vision_result",
+                "label": "Resultado de la Vision",
+                "stat_check": "Intelligence",
+                "options": [
+                    {"name": "Profecia Cumplida", "weight": 3, "desc": "La vision se cumple a tu favor.",
+                     "success_tier": "high",
+                     "effects": {"stat_boost": 2, "add_condition": "destiny_touched", "rep": {"Church of Light": 2, "Mages Circle": 2}}},
+                    {"name": "Pistas del Futuro", "weight": 5, "desc": "Ganas perspectiva sobre lo que viene.",
+                     "success_tier": "mid",
+                     "effects": {"stat_boost": 1, "rep": {"Mages Circle": 1}}},
+                    {"name": "Vision Confusa", "weight": 4, "desc": "No logras interpretar la vision correctamente.",
+                     "success_tier": "low",
+                     "effects": {}},
+                    {"name": "Vision Corruptora", "weight": 2, "desc": "La vision te afecta psicologicamente.",
+                     "success_tier": "fail",
+                     "effects": {"stat_damage": 1, "add_condition": "mentally_unstable"}}
+                ]
+            }
+        ]
     }
 }
 
@@ -2255,10 +3720,59 @@ def main():
         decision_mods.clear()
         update_char_display()
 
+        # Random event chance (40%) - an event fires between chapters
+        if random.random() < 0.4:
+            event_chain = pick_random_event_chain()
+            if event_chain:
+                adventure_phase['chapter'] += 1
+                adventure_phase['step'] = 0
+                start_chain(event_chain)
+                return
+
         # Advance chapter
         adventure_phase['chapter'] += 1
         adventure_phase['step'] = 0
         show_adventure_wheel()
+
+    def pick_random_event_chain():
+        """Pick a random event that has a chain, weighted by tags and conditions"""
+        events = data.get('adventure_events', [])
+        tag_weights = build_adventure_tag_weights()
+
+        candidates = []
+        for item in events:
+            # Only pick events that have chains
+            if item['name'] not in EVENT_CHAINS:
+                continue
+            # Check if blocked
+            chain_def = EVENT_CHAINS[item['name']]
+            if chain_def.get('blocked_by') and chain_def['blocked_by'] in conditions:
+                continue
+
+            weight = apply_tag_weights(item, tag_weights)
+            # Apply reputation bonuses
+            for faction_name, score in reputation.items():
+                faction_data = next((f for f in data.get('factions', []) if f['name'] == faction_name), None)
+                if faction_data and score > 0:
+                    item_tags = item.get('tags', [])
+                    for tag in faction_data.get('tags', []):
+                        if tag in item_tags:
+                            weight *= 1 + score * 0.1
+
+            if weight > 0:
+                candidates.append((item['name'], weight))
+
+        if not candidates:
+            return None
+
+        total = sum(w for _, w in candidates)
+        choice = random.uniform(0, total)
+        current = 0
+        for name, w in candidates:
+            current += w
+            if choice <= current:
+                return name
+        return candidates[-1][0]
 
     # ===== END ADVENTURE HELPERS =====
 
