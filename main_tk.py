@@ -1914,6 +1914,104 @@ EVENT_CHAINS = {
     }
 }
 
+# ========== CHAIN REPETITION LIMITS ==========
+CHAIN_LIMITS = {
+    # Unique: only once per run (major one-time events)
+    "Attempt Apotheosis": {"unique": True},
+    "Dragon Sighting": {"unique": True},
+    "Demonic Rift": {"unique": True},
+    "Mystic Eclipse": {"unique": True},
+    "Lost Heir": {"unique": True},
+    "Oracle Vision": {"unique": True},
+    "Assassination Attempt": {"unique": True},
+    "Trial by Combat": {"unique": True},
+    "Pirate Blockade": {"unique": True},
+    "Ancient Map": {"unique": True},
+    "Forbidden Library": {"unique": True},
+    # Limited repeats
+    "Lead a Rebellion": {"max_repeats": 2},
+    "Compete in a Tournament": {"max_repeats": 2},
+    "Serve at Court": {"max_repeats": 2},
+    "Establish a Business": {"max_repeats": 1},
+    "Perform a Dark Ritual": {"max_repeats": 2},
+    "Study an Ancient Tome": {"max_repeats": 3},
+    "Infiltrate a Stronghold": {"max_repeats": 2},
+    "Track a Fugitive": {"max_repeats": 3},
+    "Forge Legendary Gear": {"max_repeats": 2},
+    "Heretical Sermon": {"max_repeats": 1},
+    "Beast Stampede": {"max_repeats": 2},
+    "Cult Whisper": {"max_repeats": 2},
+    "Elven Envoy": {"max_repeats": 2},
+    "Dwarven Forge Fire": {"max_repeats": 2},
+    "Noble Summons": {"max_repeats": 3},
+    "Plague Signs": {"max_repeats": 2},
+}
+
+# ========== CONDITION DESCRIPTIONS ==========
+CONDITION_DESCRIPTIONS = {
+    "trade_blocked": "Comercio bloqueado por piratas",
+    "pirate_truce": "Tregua temporal con piratas",
+    "wounded": "Herido gravemente",
+    "cursed": "Maldito por fuerzas oscuras",
+    "sick": "Enfermo/contagiado",
+    "beast_stalking": "Una bestia te acecha",
+    "ancient_map": "Posees un mapa antiguo",
+    "dimensional_rift": "Portal dimensional abierto",
+    "horror_survivor": "Marcado por un horror primordial",
+    "business_owner": "Propietario de un negocio",
+    "fugitive_loose": "Un fugitivo sigue suelto",
+    "enemy_alerted": "Tu enemigo conoce tus movimientos",
+    "imprisoned": "Has estado preso recientemente",
+    "disgraced": "Caido en desgracia publica",
+    "tournament_champion": "Campeon de torneo",
+    "rebel_leader": "Lider de la rebelion",
+    "rebellion_ongoing": "Rebelion activa",
+    "wanted_rebel": "Buscado como rebelde",
+    "dark_empowered": "Imbuido de poder oscuro",
+    "semidivine": "Semidivino",
+    "clue_found": "Pista importante descubierta",
+    "has_ally": "Tienes un aliado valioso",
+    "knows_enemy": "Sabes quien es tu enemigo",
+    "assassination_survivor": "Sobreviviste un atentado",
+    "elven_ally": "Aliado de los elfos",
+    "plague_active": "Plaga activa en la region",
+    "mentally_unstable": "Inestabilidad mental",
+    "cult_knowledge": "Conocimiento oculto del culto",
+    "corrupted": "Corrupcion demoniaca",
+    "rift_unstable": "Portal dimensional inestable",
+    "political_trouble": "Problemas politicos",
+    "heretic_accused": "Acusado de herejia",
+    "destiny_touched": "Tocado por el destino",
+    "dragon_fear": "Terror al dragon",
+    "burned": "Quemaduras graves",
+}
+
+# ========== CHAIN TITLES (achievements) ==========
+CHAIN_TITLES = {
+    ("Dragon Sighting", "Triunfo Legendario"): "Mata-Dragones",
+    ("Compete in a Tournament", "Campeon!"): "Campeon del Torneo",
+    ("Demonic Rift", "Portal Sellado"): "Sellador de Portales",
+    ("Assassination Attempt", "Asesino Capturado"): "El Intocable",
+    ("Lead a Rebellion", "Victoria Revolucionaria"): "El Libertador",
+    ("Attempt Apotheosis", "Semidivinidad"): "Semidios",
+    ("Pirate Blockade", "Victoria Aplastante"): "Terror de los Mares",
+    ("Hunt a Beast", "Caza Gloriosa"): "Gran Cazador",
+    ("Investigate a Mystery", "Caso Resuelto!"): "Detective Supremo",
+    ("Serve at Court", "Favor del Rey"): "Favorito del Rey",
+    ("Forge Legendary Gear", "Obra Maestra"): "Maestro Forjador",
+    ("Heal the Sick", "Cura Milagrosa"): "El Sanador",
+    ("Explore Ruins", "Reliquia Legendaria"): "Explorador Legendario",
+    ("Infiltrate a Stronghold", "Mision Perfecta"): "La Sombra",
+    ("Perform a Dark Ritual", "Ritual Perfecto"): "Senor Oscuro",
+    ("Trial by Combat", "Victoria Heroica"): "Campeon del Juicio",
+    ("Plague Signs", "Plaga Erradicada"): "Salvador de la Plaga",
+    ("Negotiate a Trade", "Ganga Increible"): "Negociador Supremo",
+    ("Guard a Caravan", "Caravana Intacta"): "Guardia de Honor",
+    ("Track a Fugitive", "Captura Limpia"): "Cazarrecompensas",
+    ("Study an Ancient Tome", "Conocimiento Profundo"): "Erudito",
+    ("Establish a Business", "Negocio Prospero"): "Magnate",
+}
+
 # Decision definitions for adventure events
 ADVENTURE_DECISIONS = {
     "Cult Whisper": {
@@ -2104,6 +2202,19 @@ def main():
             for entry in adventure_log[-5:]:  # Show last 5 entries
                 char_text.insert(tk.END, f"{entry}\n")
 
+        # Show active conditions
+        if conditions:
+            char_text.insert(tk.END, '\n--- ESTADO DEL MUNDO ---\n')
+            for cond in sorted(conditions):
+                desc = CONDITION_DESCRIPTIONS.get(cond, cond.replace('_', ' ').title())
+                char_text.insert(tk.END, f"  * {desc}\n")
+
+        # Show earned titles
+        if titles:
+            char_text.insert(tk.END, '\n--- TITULOS ---\n')
+            for title in titles:
+                char_text.insert(tk.END, f"  * {title}\n")
+
         char_text.config(state='disabled')
 
     # Current wheel label
@@ -2207,6 +2318,8 @@ def main():
     adventure_log = []  # chapter summaries
     decision_mods = {}  # temporary tag mods from decisions
     conditions = set()  # persistent world conditions (e.g. "trade_blocked")
+    completed_chains = {}  # chain_name -> completion count
+    titles = []  # earned titles/achievements
     chain_state = {
         'active': False,     # is a chain currently running?
         'chain_name': None,  # name of the chain (key in EVENT_CHAINS)
@@ -2641,6 +2754,16 @@ def main():
                     if chain_def['blocked_by'] in conditions:
                         continue  # skip blocked activities
 
+                # Check chain repeat limits
+                chain_name = item['name']
+                if chain_name in completed_chains:
+                    count = completed_chains[chain_name]
+                    limits = CHAIN_LIMITS.get(chain_name, {})
+                    if limits.get('unique') and count > 0:
+                        continue  # skip unique chains already done
+                    if 'max_repeats' in limits and count >= limits['max_repeats']:
+                        continue  # skip chains at max repeats
+
                 weight = apply_tag_weights(item, tag_weights)
                 for tag in item.get('tags', []):
                     if tag in decision_mods:
@@ -2649,6 +2772,10 @@ def main():
                 # Boost activities that have chains (more interesting)
                 if item['name'] in EVENT_CHAINS:
                     weight *= 1.3
+
+                # Diminishing returns for repeated chains
+                if chain_name in completed_chains and completed_chains[chain_name] > 0:
+                    weight *= max(0.15, 1.0 / (1 + completed_chains[chain_name] * 0.6))
 
                 segments.append({
                     'name': item['name'],
@@ -2674,6 +2801,16 @@ def main():
                     if chain_def['blocked_by'] in conditions:
                         continue
 
+                # Check chain repeat limits
+                chain_name = item['name']
+                if chain_name in completed_chains:
+                    count = completed_chains[chain_name]
+                    limits = CHAIN_LIMITS.get(chain_name, {})
+                    if limits.get('unique') and count > 0:
+                        continue  # skip unique events already done
+                    if 'max_repeats' in limits and count >= limits['max_repeats']:
+                        continue  # skip events at max repeats
+
                 weight = apply_tag_weights(item, tag_weights)
                 for tag in item.get('tags', []):
                     if tag in decision_mods:
@@ -2682,6 +2819,10 @@ def main():
                 # Boost events that have chains
                 if item['name'] in EVENT_CHAINS:
                     weight *= 1.3
+
+                # Diminishing returns for repeated events
+                if chain_name in completed_chains and completed_chains[chain_name] > 0:
+                    weight *= max(0.15, 1.0 / (1 + completed_chains[chain_name] * 0.6))
 
                 segments.append({
                     'name': item['name'],
@@ -3365,7 +3506,7 @@ def main():
         # Show end popup
         popup = tk.Toplevel(root)
         popup.title(title)
-        popup.geometry('600x500')
+        popup.geometry('650x700')
         popup.configure(bg='#1a1a2e')
         popup.transient(root)
         popup.grab_set()
@@ -3399,6 +3540,23 @@ def main():
                     rep_text += f"  {faction}: {symbol}{score}\n"
             tk.Label(popup, text=rep_text, font=('Consolas', 9),
                     fg='#eebc1d', bg='#1a1a2e', justify='left').pack(pady=5)
+
+        # Show titles earned
+        if titles:
+            titles_text = '\nTitulos Obtenidos:\n'
+            for t in titles:
+                titles_text += f"  * {t}\n"
+            tk.Label(popup, text=titles_text, font=('Consolas', 9),
+                    fg='#44ff44', bg='#1a1a2e', justify='left').pack(pady=5)
+
+        # Show final world state
+        if conditions:
+            cond_text = '\nEstado del Mundo:\n'
+            for cond in sorted(conditions):
+                desc = CONDITION_DESCRIPTIONS.get(cond, cond.replace('_', ' ').title())
+                cond_text += f"  * {desc}\n"
+            tk.Label(popup, text=cond_text, font=('Consolas', 9),
+                    fg='#ff9999', bg='#1a1a2e', justify='left').pack(pady=5)
 
         tk.Button(popup, text='Cerrar', font=('Segoe UI', 12, 'bold'),
                  bg='#eebc1d', fg='#000000', width=15,
@@ -3584,7 +3742,8 @@ def main():
 
         # Apply immediate effects from the option
         effects = selected_opt.get('effects', {})
-        apply_chain_effects(effects)
+        context_stat = step.get('stat_check')  # pass stat context for targeted effects
+        apply_chain_effects(effects, context_stat)
 
         # Store temp vars (keys starting with _)
         for k, v in effects.items():
@@ -3611,65 +3770,73 @@ def main():
             # Chain complete
             end_chain()
 
-    def apply_chain_effects(effects):
-        """Apply effects from a chain option"""
+    def apply_chain_effects(effects, context_stat=None):
+        """Apply effects from a chain option with narrative feedback"""
         chapter = adventure_phase['chapter']
+        stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
+                      5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
+                      9: 'Superhuman', 10: 'Legendary'}
 
-        # Stat boost (to a random relevant stat)
+        # Stat boost - targeted to context stat or related stat
         stat_boost = effects.get('stat_boost', 0)
         if stat_boost > 0:
-            stats = ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']
-            stat = random.choice(stats)
+            if context_stat and context_stat in ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']:
+                stat = context_stat
+            else:
+                stats = ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']
+                stat = random.choice(stats)
             old_val = get_stat_value(stat)
             new_val = min(10, old_val + stat_boost)
-            # Find the label for the new value
-            stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
-                          5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
-                          9: 'Superhuman', 10: 'Legendary'}
             state.selections[stat] = f'{new_val} ({stat_labels.get(new_val, "Good")})'
+            adventure_log.append(f'  [+{stat_boost}] {stat}: {old_val} -> {new_val}')
 
         # Stat boost to specific stat
         stat_spec = effects.get('stat_boost_specific')
         if stat_spec:
             old_val = get_stat_value(stat_spec)
             new_val = min(10, old_val + 1)
-            stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
-                          5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
-                          9: 'Superhuman', 10: 'Legendary'}
             state.selections[stat_spec] = f'{new_val} ({stat_labels.get(new_val, "Good")})'
+            adventure_log.append(f'  [+1] {stat_spec}: {old_val} -> {new_val}')
 
-        # Stat damage (to a random stat)
+        # Stat damage - targeted to context stat (you fail at what you tried)
         stat_dmg = effects.get('stat_damage', 0)
         if stat_dmg > 0:
-            stats = ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']
-            stat = random.choice(stats)
+            if context_stat and context_stat in ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']:
+                # Damage the stat you were using (failed attempt hurts relevant ability)
+                stat = context_stat
+            else:
+                # Damage weakest stat (injury exploits weakness)
+                stats = ['Strength', 'Agility', 'Durability', 'Intelligence', 'Charisma']
+                stat = min(stats, key=lambda s: get_stat_value(s))
             old_val = get_stat_value(stat)
             new_val = max(1, old_val - stat_dmg)
-            stat_labels = {1: 'Abysmal', 2: 'Poor', 3: 'Below Average', 4: 'Average',
-                          5: 'Good', 6: 'Excellent', 7: 'Great', 8: 'Outstanding',
-                          9: 'Superhuman', 10: 'Legendary'}
             state.selections[stat] = f'{new_val} ({stat_labels.get(new_val, "Good")})'
+            adventure_log.append(f'  [-{stat_dmg}] {stat}: {old_val} -> {new_val}')
 
-        # Add condition
+        # Add condition with narrative
         cond = effects.get('add_condition')
         if cond:
             conditions.add(cond)
+            cond_desc = CONDITION_DESCRIPTIONS.get(cond, cond)
+            adventure_log.append(f'  [ESTADO] {cond_desc}')
 
-        # Remove condition
+        # Remove condition with narrative
         rm_cond = effects.get('remove_condition')
         if rm_cond and rm_cond in conditions:
             conditions.discard(rm_cond)
+            cond_desc = CONDITION_DESCRIPTIONS.get(rm_cond, rm_cond)
+            adventure_log.append(f'  [CURADO] {cond_desc}')
 
         # Add random item
         if effects.get('add_random_item'):
             objects = data.get('objects', [])
             if objects:
                 item = random.choice(objects)
-                # Find next available item slot
                 item_idx = 1
                 while f'Item {item_idx}' in state.selections:
                     item_idx += 1
                 state.selections[f'Item {item_idx}'] = item['name']
+                adventure_log.append(f'  [ITEM] Obtienes: {item["name"]}')
 
         # Add item from prey/forge (named item)
         if effects.get('add_item'):
@@ -3678,6 +3845,7 @@ def main():
             while f'Item {item_idx}' in state.selections:
                 item_idx += 1
             state.selections[f'Item {item_idx}'] = forge_item
+            adventure_log.append(f'  [ITEM] Forjado: {forge_item}')
 
         if effects.get('add_item_from'):
             source_key = effects['add_item_from']
@@ -3687,6 +3855,7 @@ def main():
             while f'Item {item_idx}' in state.selections:
                 item_idx += 1
             state.selections[f'Item {item_idx}'] = trophy_name
+            adventure_log.append(f'  [ITEM] Trofeo: {source_name}')
 
         # Wealth changes
         if effects.get('gain_wealth'):
@@ -3694,16 +3863,30 @@ def main():
         if effects.get('lose_wealth'):
             adventure_log.append(f'  [-] Riqueza perdida')
 
-        # Reputation changes
+        # Reputation changes with narrative
         for faction, change in effects.get('rep', {}).items():
             if faction not in reputation:
                 reputation[faction] = 0
             reputation[faction] += change
+            symbol = '+' if change > 0 else ''
+            adventure_log.append(f'  [REP] {faction}: {symbol}{change}')
 
     def end_chain():
         """End the current chain and advance to next chapter"""
         chapter = adventure_phase['chapter']
         chain_name = chain_state['chain_name'] or '?'
+
+        # Track chain completion
+        completed_chains[chain_name] = completed_chains.get(chain_name, 0) + 1
+
+        # Check for title awards based on chain outcomes
+        for step_id, choice_name in chain_state['choices'].items():
+            title_key = (chain_name, choice_name)
+            if title_key in CHAIN_TITLES:
+                new_title = CHAIN_TITLES[title_key]
+                if new_title not in titles:
+                    titles.append(new_title)
+                    adventure_log.append(f'  [TITULO] Obtienes: {new_title}')
 
         # Build log entry from chain choices
         choices_str = ' > '.join(chain_state['choices'].values())
@@ -3749,7 +3932,19 @@ def main():
             if chain_def.get('blocked_by') and chain_def['blocked_by'] in conditions:
                 continue
 
+            # Check chain repeat limits
+            if item['name'] in completed_chains:
+                count = completed_chains[item['name']]
+                limits = CHAIN_LIMITS.get(item['name'], {})
+                if limits.get('unique') and count > 0:
+                    continue
+                if 'max_repeats' in limits and count >= limits['max_repeats']:
+                    continue
+
             weight = apply_tag_weights(item, tag_weights)
+            # Diminishing returns for repeated chains
+            if item['name'] in completed_chains and completed_chains[item['name']] > 0:
+                weight *= max(0.15, 1.0 / (1 + completed_chains[item['name']] * 0.6))
             # Apply reputation bonuses
             for faction_name, score in reputation.items():
                 faction_data = next((f for f in data.get('factions', []) if f['name'] == faction_name), None)
