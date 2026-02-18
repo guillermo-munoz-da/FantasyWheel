@@ -6,6 +6,93 @@ import os
 import random
 import math
 
+# Adventure phase constants
+ADVENTURE_STEPS = ['Adventure Activity', 'Adventure Event', 'Adventure Action', 'Adventure Outcome']
+
+# Decision definitions for adventure events
+ADVENTURE_DECISIONS = {
+    "Cult Whisper": {
+        "prompt": "Un culto clandestino te ofrece secretos oscuros. \u00bfQu\u00e9 decides?",
+        "options": [
+            {"label": "Unirse al Culto", "tag_mods": {"dark": 1.5, "evil": 1.3, "shadow": 1.3}, "rep": {"Shadow Council": 3, "Church of Light": -2}},
+            {"label": "Rechazar y Denunciar", "tag_mods": {"good": 1.5, "divine": 1.2}, "rep": {"Church of Light": 2, "Shadow Council": -3}},
+            {"label": "Infiltrarse como Esp\u00eda", "tag_mods": {"stealth": 1.4, "investigation": 1.3}, "rep": {"Shadow Council": 1}}
+        ]
+    },
+    "Noble Summons": {
+        "prompt": "La nobleza exige tu presencia para una misi\u00f3n. \u00bfC\u00f3mo respondes?",
+        "options": [
+            {"label": "Aceptar la Misi\u00f3n", "tag_mods": {"honor": 1.3, "leadership": 1.2}, "rep": {"The Crown": 2}},
+            {"label": "Negociar T\u00e9rminos", "tag_mods": {"trade": 1.4, "social": 1.3}, "rep": {"The Crown": 1, "Merchant Guild": 1}},
+            {"label": "Rechazar", "tag_mods": {"neutral": 1.2}, "rep": {"The Crown": -2}}
+        ]
+    },
+    "Assassination Attempt": {
+        "prompt": "\u00a1Han intentado asesinarte! \u00bfC\u00f3mo reaccionas?",
+        "options": [
+            {"label": "Contraatacar", "tag_mods": {"combat": 1.5, "honor": 1.2}, "rep": {"Hunters Lodge": 1}},
+            {"label": "Huir y Esconderse", "tag_mods": {"stealth": 1.4}, "rep": {"Thieves Guild": 1}},
+            {"label": "Investigar al Autor", "tag_mods": {"investigation": 1.5, "politics": 1.2}, "rep": {"The Crown": 1}}
+        ]
+    },
+    "Merchant Guild Offer": {
+        "prompt": "El Gremio de Mercaderes te propone un trato arriesgado. \u00bfQu\u00e9 haces?",
+        "options": [
+            {"label": "Aceptar el Trato", "tag_mods": {"trade": 1.5, "merchant": 1.3}, "rep": {"Merchant Guild": 2}},
+            {"label": "Pedir M\u00e1s Informaci\u00f3n", "tag_mods": {"investigation": 1.3}, "rep": {"Merchant Guild": 1}},
+            {"label": "Rechazar", "tag_mods": {"neutral": 1.1}, "rep": {"Merchant Guild": -1}}
+        ]
+    },
+    "Demonic Rift": {
+        "prompt": "Un portal infernal se ha abierto. \u00bfQu\u00e9 decides hacer?",
+        "options": [
+            {"label": "Cerrar el Portal", "tag_mods": {"magic": 1.4, "good": 1.3, "divine": 1.3}, "rep": {"Church of Light": 3, "Mages Circle": 1}},
+            {"label": "Aprovechar su Poder", "tag_mods": {"dark": 1.5, "evil": 1.4}, "rep": {"Shadow Council": 2, "Church of Light": -3}},
+            {"label": "Huir de la Zona", "tag_mods": {"neutral": 1.2}, "rep": {}}
+        ]
+    },
+    "Shadow Market": {
+        "prompt": "Has descubierto un mercado ilegal. \u00bfQu\u00e9 haces?",
+        "options": [
+            {"label": "Comerciar", "tag_mods": {"trade": 1.4, "crime": 1.3}, "rep": {"Thieves Guild": 2, "Merchant Guild": -1}},
+            {"label": "Denunciar", "tag_mods": {"good": 1.3, "honor": 1.2}, "rep": {"The Crown": 2, "Thieves Guild": -3}},
+            {"label": "Buscar Informaci\u00f3n", "tag_mods": {"investigation": 1.3, "stealth": 1.2}, "rep": {"Thieves Guild": 1}}
+        ]
+    },
+    "Trial by Combat": {
+        "prompt": "La justicia exige un duelo a muerte. \u00bfC\u00f3mo procedes?",
+        "options": [
+            {"label": "Aceptar el Duelo", "tag_mods": {"combat": 1.5, "honor": 1.4}, "rep": {"The Crown": 1, "Hunters Lodge": 1}},
+            {"label": "Buscar un Campe\u00f3n", "tag_mods": {"social": 1.3, "trade": 1.2}, "rep": {"Merchant Guild": 1}},
+            {"label": "Huir antes del Duelo", "tag_mods": {"stealth": 1.4, "crime": 1.2}, "rep": {"The Crown": -2, "Thieves Guild": 1}}
+        ]
+    },
+    "Forbidden Library": {
+        "prompt": "Una biblioteca sellada se abre por una noche. \u00bfQu\u00e9 haces?",
+        "options": [
+            {"label": "Estudiar los Textos", "tag_mods": {"magic": 1.5, "arcane": 1.4, "research": 1.3}, "rep": {"Mages Circle": 2}},
+            {"label": "Robar Textos Valiosos", "tag_mods": {"crime": 1.4, "trade": 1.2}, "rep": {"Thieves Guild": 2, "Mages Circle": -2}},
+            {"label": "Alertar a las Autoridades", "tag_mods": {"good": 1.2}, "rep": {"The Crown": 1, "Mages Circle": -1}}
+        ]
+    },
+    "Dragon Sighting": {
+        "prompt": "Un drag\u00f3n amenaza la regi\u00f3n. \u00bfQu\u00e9 haces?",
+        "options": [
+            {"label": "Cazar al Drag\u00f3n", "tag_mods": {"combat": 1.6, "hunt": 1.5}, "rep": {"Hunters Lodge": 3}},
+            {"label": "Negociar con \u00e9l", "tag_mods": {"social": 1.4, "magic": 1.2}, "rep": {"Mages Circle": 1}},
+            {"label": "Evacuar la Zona", "tag_mods": {"leadership": 1.3, "good": 1.2}, "rep": {"The Crown": 1}}
+        ]
+    },
+    "Plague Signs": {
+        "prompt": "Se detectan s\u00edntomas de peste. \u00bfC\u00f3mo act\u00faas?",
+        "options": [
+            {"label": "Curar a los Enfermos", "tag_mods": {"healing": 1.5, "good": 1.3}, "rep": {"Church of Light": 2}},
+            {"label": "Buscar la Causa", "tag_mods": {"investigation": 1.4, "research": 1.3}, "rep": {"Mages Circle": 1}},
+            {"label": "Huir de la Plaga", "tag_mods": {"neutral": 1.2}, "rep": {"Church of Light": -1}}
+        ]
+    }
+}
+
 
 def main():
     data = load_data()
@@ -96,6 +183,22 @@ def main():
                     char_text.insert(tk.END, f"{key}: {', '.join(val)}\n")
                 else:
                     char_text.insert(tk.END, f"{key}: {val}\n")
+
+        # Show reputation during adventure
+        if adventure_phase['active'] and any(v != 0 for v in reputation.values()):
+            char_text.insert(tk.END, '\n--- REPUTACION ---\n')
+            for faction, score in reputation.items():
+                if score != 0:
+                    bar = '|' * abs(score)
+                    symbol = '+' if score > 0 else '-'
+                    char_text.insert(tk.END, f"{faction}: {symbol}{abs(score)} {bar}\n")
+
+        # Show adventure log
+        if adventure_log:
+            char_text.insert(tk.END, '\n--- AVENTURA ---\n')
+            for entry in adventure_log[-5:]:  # Show last 5 entries
+                char_text.insert(tk.END, f"{entry}\n")
+
         char_text.config(state='disabled')
 
     # Current wheel label
@@ -108,6 +211,14 @@ def main():
                         bg='#eebc1d', fg='#000000', activebackground='#f9d923', 
                         activeforeground='#000000', relief='raised', bd=3)
     main_container.create_window(900, 820, window=spin_btn, tags='ui_element')
+
+    # End Run button (hidden during character creation)
+    end_run_btn = tk.Button(main_container, text='FIN DE RUN', width=14, font=('Segoe UI', 11, 'bold'),
+                           bg='#ff4444', fg='#ffffff', activebackground='#ff6666',
+                           activeforeground='#ffffff', relief='raised', bd=3,
+                           state='disabled')
+    end_run_window = main_container.create_window(900, 870, window=end_run_btn, tags=('ui_element', 'end_run_tag'))
+    main_container.itemconfigure('end_run_tag', state='hidden')
 
     # Custom wheel configuration - dynamic based on selections
     wheel_config_base = ['Race', 'Gender', 'Age', 'Archetype', 'Class', 'Alignment',
@@ -184,6 +295,12 @@ def main():
     
     wheel_index = {'i': 0}
     spinning = {'active': False, 'rotation': 0.0}
+
+    # Adventure phase state
+    adventure_phase = {'active': False, 'chapter': 1, 'step': 0}
+    reputation = {}  # faction_name: score
+    adventure_log = []  # chapter summaries
+    decision_mods = {}  # temporary tag mods from decisions
 
     def build_wheel_data(wheel_name):
         """Build wheel segments"""
@@ -592,6 +709,112 @@ def main():
                     'color': get_color(i, len(items_filtered)),
                     'desc': f"Objeto: {item['name']}"
                 })
+
+        # Dynamic Adventure Activity wheels
+        elif wheel_name.startswith('Adventure Activity '):
+            items = data.get('adventure_activities', [])
+            tag_weights = build_adventure_tag_weights()
+            # Apply reputation bonuses to tag weights
+            for faction_name, score in reputation.items():
+                faction_data = next((f for f in data.get('factions', []) if f['name'] == faction_name), None)
+                if faction_data and score > 0:
+                    for tag in faction_data.get('tags', []):
+                        tag_weights[tag] = max(tag_weights.get(tag, 1.0), 1 + score * 0.1)
+
+            for i, item in enumerate(items):
+                weight = apply_tag_weights(item, tag_weights)
+                for tag in item.get('tags', []):
+                    if tag in decision_mods:
+                        weight *= decision_mods[tag]
+                segments.append({
+                    'name': item['name'],
+                    'weight': weight,
+                    'color': get_color(i, len(items)),
+                    'desc': f"Actividad: {item.get('desc', item['name'])}"
+                })
+
+        # Dynamic Adventure Event wheels
+        elif wheel_name.startswith('Adventure Event '):
+            items = data.get('adventure_events', [])
+            tag_weights = build_adventure_tag_weights()
+            for faction_name, score in reputation.items():
+                faction_data = next((f for f in data.get('factions', []) if f['name'] == faction_name), None)
+                if faction_data and score > 0:
+                    for tag in faction_data.get('tags', []):
+                        tag_weights[tag] = max(tag_weights.get(tag, 1.0), 1 + score * 0.1)
+
+            for i, item in enumerate(items):
+                weight = apply_tag_weights(item, tag_weights)
+                for tag in item.get('tags', []):
+                    if tag in decision_mods:
+                        weight *= decision_mods[tag]
+                segments.append({
+                    'name': item['name'],
+                    'weight': weight,
+                    'color': get_color(i, len(items)),
+                    'desc': f"Evento: {item.get('desc', item['name'])}"
+                })
+
+        # Dynamic Adventure Action wheels
+        elif wheel_name.startswith('Adventure Action '):
+            items = data.get('adventure_actions', [])
+            tag_weights = build_adventure_tag_weights()
+            for faction_name, score in reputation.items():
+                faction_data = next((f for f in data.get('factions', []) if f['name'] == faction_name), None)
+                if faction_data and score > 0:
+                    for tag in faction_data.get('tags', []):
+                        tag_weights[tag] = max(tag_weights.get(tag, 1.0), 1 + score * 0.1)
+
+            for i, item in enumerate(items):
+                weight = apply_tag_weights(item, tag_weights)
+                for tag in item.get('tags', []):
+                    if tag in decision_mods:
+                        weight *= decision_mods[tag]
+                segments.append({
+                    'name': item['name'],
+                    'weight': weight,
+                    'color': get_color(i, len(items)),
+                    'desc': f"Accion: {item.get('desc', item['name'])}"
+                })
+
+        # Dynamic Adventure Outcome wheels
+        elif wheel_name.startswith('Adventure Outcome '):
+            items = data.get('adventure_outcomes', [])
+            tag_weights = build_adventure_tag_weights()
+            chapter = adventure_phase.get('chapter', 1)
+
+            # Get action tags for stat checks
+            action_tags = get_action_tags_for_chapter(chapter)
+            stat_bonus = compute_stat_bonus_for_tags(action_tags)
+
+            for i, item in enumerate(items):
+                weight = apply_tag_weights(item, tag_weights)
+                # Apply decision mods
+                for tag in item.get('tags', []):
+                    if tag in decision_mods:
+                        weight *= decision_mods[tag]
+
+                # Stat checks: positive outcomes boosted by good stats
+                item_tags = item.get('tags', [])
+                if any(t in item_tags for t in ['positive', 'good', 'merchant']):
+                    weight *= max(0.3, 1 + stat_bonus)
+                elif any(t in item_tags for t in ['negative', 'evil', 'dark']):
+                    weight *= max(0.3, 1 - stat_bonus)
+
+                # Dynamic death/victory weights
+                terminal = item.get('terminal', None)
+                if terminal == 'death':
+                    weight = compute_death_weight(chapter)
+                elif terminal == 'victory':
+                    weight = compute_victory_weight(chapter, item['name'])
+
+                if weight > 0:
+                    segments.append({
+                        'name': item['name'],
+                        'weight': weight,
+                        'color': get_color(i, len(items)),
+                        'desc': f"Resultado: {item.get('desc', item['name'])}"
+                    })
         
         return segments
 
@@ -727,6 +950,143 @@ def main():
             'Blood Curse': ['Blood'],
             'Blood Drain': ['Blood', 'Infernal']
         }
+
+    def apply_tag_weights(item, tag_weights):
+        """Apply weight multipliers based on item tags"""
+        weight = item.get('weight', 1)
+        for tag in item.get('tags', []):
+            if tag in tag_weights:
+                weight *= tag_weights[tag]
+        return weight
+
+    def build_adventure_tag_weights():
+        """Build adventure tag weights from character selections"""
+        tag_weights = {}
+
+        def add_tag(tag, mult):
+            tag_weights[tag] = max(tag_weights.get(tag, 1.0), mult)
+
+        archetype = state.selections.get('Archetype', '')
+        char_class = state.selections.get('Class', '')
+        race = state.selections.get('Race', '')
+        alignment = state.selections.get('Alignment', '')
+
+        if archetype == 'Merchant':
+            add_tag('merchant', 2.0)
+            add_tag('trade', 2.0)
+            add_tag('commerce', 1.8)
+            add_tag('social', 1.4)
+        elif archetype == 'Warrior':
+            add_tag('combat', 1.8)
+            add_tag('honor', 1.4)
+        elif archetype == 'Mage':
+            add_tag('magic', 1.8)
+            add_tag('arcane', 1.5)
+            add_tag('research', 1.3)
+        elif archetype == 'Rogue':
+            add_tag('crime', 1.8)
+            add_tag('stealth', 1.8)
+        elif archetype == 'Priest':
+            add_tag('divine', 1.8)
+            add_tag('faith', 1.6)
+            add_tag('healing', 1.4)
+        elif archetype == 'Hunter':
+            add_tag('hunt', 1.8)
+            add_tag('tracking', 1.6)
+        elif archetype == 'Druid':
+            add_tag('nature', 1.8)
+            add_tag('ritual', 1.4)
+        elif archetype == 'Noble':
+            add_tag('politics', 1.8)
+            add_tag('leadership', 1.6)
+            add_tag('social', 1.4)
+        elif archetype == 'Beast':
+            add_tag('beast', 1.8)
+            add_tag('hunt', 1.4)
+
+        if char_class in ['Trader', 'Smuggler', 'Black Market Dealer', 'Banker', 'Artisan', 'Caravan Master', 'Fence', 'Relic Seller']:
+            add_tag('merchant', 2.0)
+            add_tag('trade', 1.8)
+        if char_class in ['Assassin', 'Spy', 'Saboteur', 'Shadow Dancer', 'Poisoner']:
+            add_tag('crime', 2.0)
+            add_tag('stealth', 1.6)
+        if char_class in ['Knight', 'Bodyguard', 'Duelist', 'Warlord', 'Gladiator']:
+            add_tag('combat', 1.8)
+            add_tag('honor', 1.3)
+        if char_class in ['Cleric', 'Inquisitor', 'Exorcist', 'Healer', 'Oracle', 'Prophet']:
+            add_tag('divine', 1.7)
+            add_tag('healing', 1.5)
+        if char_class in ['Elementalist', 'Illusionist', 'Necromancer', 'Enchanter', 'Sorcerer', 'Alchemist', 'Blood Mage', 'Chronomancer']:
+            add_tag('magic', 1.8)
+            add_tag('arcane', 1.4)
+
+        if 'Good' in alignment:
+            add_tag('good', 1.4)
+        elif 'Evil' in alignment:
+            add_tag('evil', 1.6)
+        else:
+            add_tag('neutral', 1.2)
+
+        if race in ['Vampire', 'Demon', 'Werewolf']:
+            add_tag('dark', 1.7)
+        if race == 'Elf':
+            add_tag('elven', 1.3)
+        if race == 'Dwarf':
+            add_tag('dwarf', 1.3)
+        if race == 'Orc':
+            add_tag('orc', 1.3)
+
+        magic_types = []
+        for key, val in state.selections.items():
+            if key.startswith('Magic Type') and val not in ['None', '', None]:
+                magic_types.append(val)
+
+        for mtype in magic_types:
+            add_tag('magic', 1.4)
+            add_tag(f"magic_{mtype.lower()}", 1.5)
+
+        for key, val in state.selections.items():
+            if key.startswith('Skill '):
+                if val == 'Persuasion':
+                    add_tag('social', 1.6)
+                    add_tag('trade', 1.4)
+                elif val == 'Stealth':
+                    add_tag('stealth', 1.8)
+                elif val == 'Tracking':
+                    add_tag('tracking', 1.6)
+                    add_tag('hunt', 1.4)
+                elif val == 'Smithing':
+                    add_tag('craft', 1.7)
+                elif val == 'Alchemy':
+                    add_tag('alchemy', 1.6)
+                    add_tag('magic', 1.2)
+                elif val == 'Leadership':
+                    add_tag('leadership', 1.6)
+                elif val == 'Investigation':
+                    add_tag('investigation', 1.6)
+                elif val == 'Lockpicking':
+                    add_tag('crime', 1.5)
+                elif val == 'Medicine':
+                    add_tag('healing', 1.5)
+
+        for key, val in state.selections.items():
+            if key.startswith('Power '):
+                if 'Blood' in val:
+                    add_tag('blood', 1.6)
+                    add_tag('dark', 1.3)
+                if 'Shadow' in val:
+                    add_tag('shadow', 1.6)
+                    add_tag('dark', 1.3)
+                if 'Wings' in val:
+                    add_tag('flight', 1.4)
+                if 'Mind Control' in val:
+                    add_tag('domination', 1.6)
+                if 'Regeneration' in val:
+                    add_tag('survival', 1.3)
+                if 'Animal' in val:
+                    add_tag('beast', 1.4)
+
+        return tag_weights
     
     def get_color(index, total):
         """Generate distinct colors"""
@@ -735,6 +1095,366 @@ def main():
         rgb = hsv_to_rgb(h, 0.75, 0.92)
         r, g, b = int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255)
         return '#%02x%02x%02x' % (r, g, b)
+
+    # ===== ADVENTURE HELPER FUNCTIONS =====
+
+    def get_stat_value(stat_name):
+        """Extract numeric stat value from selection string like '5 (Good)'"""
+        val_str = state.selections.get(stat_name, '5 (Good)')
+        try:
+            return int(val_str.split()[0])
+        except:
+            return 5
+
+    def compute_stat_bonus_for_tags(tags):
+        """Compute a stat-based bonus/penalty based on relevant action tags"""
+        bonus = 0.0
+        if any(t in tags for t in ['combat', 'honor']):
+            bonus += (get_stat_value('Strength') - 5) * 0.12
+            bonus += (get_stat_value('Agility') - 5) * 0.08
+            bonus += (get_stat_value('Durability') - 5) * 0.05
+        if any(t in tags for t in ['magic', 'arcane', 'ritual', 'divine', 'research']):
+            bonus += (get_stat_value('Intelligence') - 5) * 0.15
+        if any(t in tags for t in ['social', 'trade', 'politics', 'merchant', 'leadership']):
+            bonus += (get_stat_value('Charisma') - 5) * 0.15
+        if any(t in tags for t in ['stealth', 'crime']):
+            bonus += (get_stat_value('Agility') - 5) * 0.15
+        if any(t in tags for t in ['tracking', 'hunt', 'exploration']):
+            bonus += (get_stat_value('Agility') - 5) * 0.08
+            bonus += (get_stat_value('Intelligence') - 5) * 0.07
+        if any(t in tags for t in ['healing']):
+            bonus += (get_stat_value('Intelligence') - 5) * 0.1
+            bonus += (get_stat_value('Charisma') - 5) * 0.05
+        return bonus
+
+    def get_action_tags_for_chapter(chapter):
+        """Get tags from the current chapter's action for stat checks"""
+        action_key = f'Adventure Action {chapter}'
+        action_name = state.selections.get(action_key, '')
+        all_actions = data.get('adventure_actions', [])
+        action_data = next((a for a in all_actions if a['name'] == action_name), None)
+        if action_data:
+            return action_data.get('tags', [])
+        return []
+
+    def compute_death_weight(chapter):
+        """Compute dynamic death probability based on chapter and state"""
+        base = 0.5
+        # Increase danger after chapter 3
+        if chapter > 3:
+            base += (chapter - 3) * 0.4
+        # Recent catastrophes increase death chance
+        for i in range(max(1, chapter - 2), chapter):
+            outcome = state.selections.get(f'Adventure Outcome {i}', '')
+            if outcome in ['Catastrophe', 'Curse']:
+                base *= 1.8
+            if outcome == 'Make Enemy':
+                base *= 1.3
+        # Durability influence
+        durability = get_stat_value('Durability')
+        if durability <= 2:
+            base *= 2.0
+        elif durability <= 4:
+            base *= 1.3
+        elif durability >= 8:
+            base *= 0.5
+        # Powers influence
+        for key, val in state.selections.items():
+            if key.startswith('Power ') and not key.startswith('Power Count') and not key.startswith('Power Mastery'):
+                if val == 'Regeneration':
+                    base *= 0.6
+                if val == 'Unbreakable':
+                    base *= 0.7
+        return max(0.3, base)
+
+    def compute_victory_weight(chapter, victory_type):
+        """Compute dynamic victory probability based on chapter, character, and history"""
+        if chapter < 3:
+            return 0  # Can't win too early
+
+        base = 0.5
+
+        if victory_type == 'Retire Wealthy':
+            if chapter < 4:
+                return 0
+            wealth_count = sum(1 for k, v in state.selections.items()
+                              if k.startswith('Adventure Outcome') and v == 'Gain Wealth')
+            archetype = state.selections.get('Archetype', '')
+            if archetype == 'Merchant':
+                base *= 2.0
+            base += wealth_count * 0.8
+            if chapter >= 6:
+                base *= 1.5
+
+        elif victory_type == 'Ascend to Godhood':
+            if chapter < 5:
+                return 0
+            magic_count_str = state.selections.get('Magic Count', '0')
+            try:
+                magic_count = int(magic_count_str.split()[0])
+            except:
+                magic_count = 0
+            if magic_count == 0:
+                return 0  # Need magic
+            intelligence = get_stat_value('Intelligence')
+            base += (intelligence - 5) * 0.3
+            base += magic_count * 0.5
+            ascension_attempts = sum(1 for k, v in state.selections.items()
+                                    if k.startswith('Adventure Outcome') and v == 'Ascension Attempt')
+            base += ascension_attempts * 1.5
+            if chapter >= 8:
+                base *= 1.5
+
+        elif victory_type == 'Found a Dynasty':
+            if chapter < 4:
+                return 0
+            archetype = state.selections.get('Archetype', '')
+            if archetype in ['Noble', 'Merchant']:
+                base *= 2.0
+            charisma = get_stat_value('Charisma')
+            base += (charisma - 5) * 0.3
+            ally_count = sum(1 for k, v in state.selections.items()
+                            if k.startswith('Adventure Outcome') and v == 'Gain Ally')
+            base += ally_count * 0.6
+
+        elif victory_type == 'Legendary Hero':
+            if chapter < 5:
+                return 0
+            successes = sum(1 for k, v in state.selections.items()
+                           if k.startswith('Adventure Outcome') and v in ['Great Success', 'Costly Victory'])
+            strength = get_stat_value('Strength')
+            base += successes * 0.5
+            base += (strength - 5) * 0.2
+            alignment = state.selections.get('Alignment', '')
+            if 'Good' in alignment:
+                base *= 1.5
+
+        return max(0, base)
+
+    def update_reputation_from_outcome(outcome_name, action_tags):
+        """Update faction reputation based on adventure outcome and action context"""
+        factions = data.get('factions', [])
+        for faction in factions:
+            faction_tags = faction.get('tags', [])
+            faction_name = faction['name']
+            if faction_name not in reputation:
+                reputation[faction_name] = 0
+            # Positive outcomes with matching tags boost rep
+            if outcome_name in ['Great Success', 'Gain Ally', 'Gain Wealth', 'Gain Relic']:
+                for tag in action_tags:
+                    if tag in faction_tags:
+                        reputation[faction_name] += 1
+                        break
+            # Negative outcomes with matching tags hurt rep
+            elif outcome_name in ['Catastrophe', 'Failure', 'Lose Wealth']:
+                for tag in action_tags:
+                    if tag in faction_tags:
+                        reputation[faction_name] -= 1
+                        break
+
+    def start_adventure_phase():
+        """Transition from character creation to adventure phase"""
+        adventure_phase['active'] = True
+        adventure_phase['chapter'] = 1
+        adventure_phase['step'] = 0
+
+        # Initialize faction reputation
+        factions = data.get('factions', [])
+        for faction in factions:
+            reputation[faction['name']] = 0
+
+        # Show End Run button
+        end_run_btn.config(state='normal')
+        main_container.itemconfigure('end_run_tag', state='normal')
+
+        current_lbl.config(text='--- FASE DE AVENTURA ---')
+        messagebox.showinfo('Aventura',
+            'Personaje creado! Comienza tu aventura.\n\n'
+            'La aventura continua hasta:\n'
+            '- Morir sin posibilidad de resurreccion\n'
+            '- Lograr un objetivo vital\n'
+            '- Pulsar "FIN DE RUN"')
+
+        show_adventure_wheel()
+
+    def get_adventure_wheel_name():
+        """Get current adventure wheel name"""
+        step = adventure_phase['step']
+        chapter = adventure_phase['chapter']
+        return f"{ADVENTURE_STEPS[step]} {chapter}"
+
+    def show_adventure_wheel():
+        """Display current adventure wheel"""
+        wheel_name = get_adventure_wheel_name()
+        step = adventure_phase['step']
+        chapter = adventure_phase['chapter']
+
+        step_labels = ['Actividad', 'Evento', 'Accion', 'Resultado']
+        current_lbl.config(text=f'Cap. {chapter} - {step_labels[step]}')
+
+        segments = build_wheel_data(wheel_name)
+        if segments:
+            draw_wheel(segments, 0)
+            spinning['rotation'] = 0
+
+    def handle_adventure_result(selected_name):
+        """Handle a spin result during adventure phase"""
+        step = adventure_phase['step']
+        chapter = adventure_phase['chapter']
+        wheel_key = get_adventure_wheel_name()
+
+        state.selections[wheel_key] = selected_name
+
+        # After event step, check for decisions
+        if step == 1:  # Event
+            if selected_name in ADVENTURE_DECISIONS:
+                update_char_display()
+                show_decision_popup(selected_name)
+                return  # Decision popup will advance the adventure
+
+        # After outcome step, process chapter end
+        if step == 3:  # Outcome
+            # Check for terminal outcomes
+            all_outcomes = data.get('adventure_outcomes', [])
+            outcome_data = next((o for o in all_outcomes if o['name'] == selected_name), None)
+
+            if outcome_data and outcome_data.get('terminal') == 'death':
+                update_char_display()
+                end_run('death', selected_name)
+                return
+            elif outcome_data and outcome_data.get('terminal') == 'victory':
+                update_char_display()
+                end_run('victory', selected_name)
+                return
+
+            # Update reputation
+            action_tags = get_action_tags_for_chapter(chapter)
+            update_reputation_from_outcome(selected_name, action_tags)
+
+            # Log chapter summary
+            activity = state.selections.get(f'Adventure Activity {chapter}', '?')
+            event = state.selections.get(f'Adventure Event {chapter}', '?')
+            action = state.selections.get(f'Adventure Action {chapter}', '?')
+            adventure_log.append(f"Cap.{chapter}: {activity} > {event} > {action} > {selected_name}")
+
+            # Clear temporary decision mods
+            decision_mods.clear()
+
+        update_char_display()
+        advance_adventure()
+
+    def advance_adventure():
+        """Move to next adventure step or chapter"""
+        adventure_phase['step'] += 1
+        if adventure_phase['step'] > 3:
+            adventure_phase['step'] = 0
+            adventure_phase['chapter'] += 1
+        show_adventure_wheel()
+
+    def show_decision_popup(event_name):
+        """Show decision popup for an adventure event"""
+        decision = ADVENTURE_DECISIONS[event_name]
+
+        popup = tk.Toplevel(root)
+        popup.title('Decision')
+        popup.geometry('550x400')
+        popup.configure(bg='#1a1a2e')
+        popup.transient(root)
+        popup.grab_set()
+        popup.geometry('+{}+{}'.format(root.winfo_x() + 525, root.winfo_y() + 250))
+
+        tk.Label(popup, text='DECISION', font=('Segoe UI', 18, 'bold'),
+                fg='#ff6b6b', bg='#1a1a2e').pack(pady=10)
+
+        tk.Label(popup, text=decision['prompt'], font=('Segoe UI', 12),
+                fg='#eebc1d', bg='#1a1a2e', wraplength=500).pack(pady=10)
+
+        def on_decision(option):
+            # Apply tag mods
+            for tag, mult in option.get('tag_mods', {}).items():
+                decision_mods[tag] = max(decision_mods.get(tag, 1.0), mult)
+            # Apply reputation changes
+            for faction, change in option.get('rep', {}).items():
+                if faction not in reputation:
+                    reputation[faction] = 0
+                reputation[faction] += change
+            popup.destroy()
+            update_char_display()
+            advance_adventure()
+
+        for option in decision['options']:
+            btn = tk.Button(popup, text=option['label'], font=('Segoe UI', 11, 'bold'),
+                           bg='#2a2a4e', fg='#eebc1d', activebackground='#3a3a6e',
+                           activeforeground='#eebc1d', width=35, relief='ridge', bd=2,
+                           command=lambda o=option: on_decision(o))
+            btn.pack(pady=8)
+
+    def end_run(reason, detail=''):
+        """End the adventure"""
+        adventure_phase['active'] = False
+        spin_btn.config(state='disabled')
+        end_run_btn.config(state='disabled')
+
+        chapter = adventure_phase['chapter']
+
+        if reason == 'death':
+            title = 'MUERTE'
+            msg = f'Tu aventura termina en el capitulo {chapter}.\n\n{detail}\n\nHas caido sin posibilidad de resurreccion.'
+            color = '#ff4444'
+        elif reason == 'victory':
+            title = 'VICTORIA'
+            msg = f'Has logrado tu objetivo vital en el capitulo {chapter}!\n\n{detail}\n\nTu leyenda perdurara por siempre.'
+            color = '#44ff44'
+        else:  # manual end run
+            title = 'FIN DE RUN'
+            msg = f'Has decidido terminar tu aventura en el capitulo {chapter}.\n\nTu historia queda inconclusa, pero vives para contarla.'
+            color = '#eebc1d'
+
+        # Show end popup
+        popup = tk.Toplevel(root)
+        popup.title(title)
+        popup.geometry('600x500')
+        popup.configure(bg='#1a1a2e')
+        popup.transient(root)
+        popup.grab_set()
+        popup.geometry('+{}+{}'.format(root.winfo_x() + 500, root.winfo_y() + 200))
+
+        tk.Label(popup, text=title, font=('Segoe UI', 22, 'bold'),
+                fg=color, bg='#1a1a2e').pack(pady=15)
+
+        tk.Label(popup, text=msg, font=('Segoe UI', 12),
+                fg='#eebc1d', bg='#1a1a2e', wraplength=550).pack(pady=10)
+
+        # Show adventure log
+        if adventure_log:
+            log_frame = tk.Frame(popup, bg='#0f3460')
+            log_frame.pack(fill='both', expand=True, padx=10, pady=10)
+            tk.Label(log_frame, text='Registro de Aventura:', font=('Segoe UI', 10, 'bold'),
+                    fg='#eebc1d', bg='#0f3460').pack(anchor='w', padx=5, pady=2)
+            log_text = scrolledtext.ScrolledText(log_frame, height=8, width=65,
+                                                font=('Consolas', 8), bg='#0f3460', fg='#eebc1d', bd=0)
+            log_text.pack(fill='both', expand=True, padx=5, pady=2)
+            for entry in adventure_log:
+                log_text.insert(tk.END, entry + '\n')
+            log_text.config(state='disabled')
+
+        # Show reputation
+        if any(v != 0 for v in reputation.values()):
+            rep_text = '\nReputacion Final:\n'
+            for faction, score in reputation.items():
+                if score != 0:
+                    symbol = '+' if score > 0 else ''
+                    rep_text += f"  {faction}: {symbol}{score}\n"
+            tk.Label(popup, text=rep_text, font=('Consolas', 9),
+                    fg='#eebc1d', bg='#1a1a2e', justify='left').pack(pady=5)
+
+        tk.Button(popup, text='Cerrar', font=('Segoe UI', 12, 'bold'),
+                 bg='#eebc1d', fg='#000000', width=15,
+                 command=popup.destroy).pack(pady=10)
+
+        current_lbl.config(text=title)
+
+    # ===== END ADVENTURE HELPERS =====
 
     def draw_wheel(segments, rotation_angle=0.0):
         """Draw the circular wheel"""
@@ -785,7 +1505,7 @@ def main():
         
         wheel_canvas.create_polygon(points, fill=color, outline='#1a1a1a', width=1)
 
-        # Label - positioned to not rotate
+        # Label - horizontal text for prototype stability
         mid_angle = (start_angle + end_angle) / 2
         label_radius = radius * 0.65
         label_rad = math.radians(mid_angle)
@@ -875,31 +1595,37 @@ def main():
 
     def on_spin_result(selected_name):
         """Handle spin result"""
+        if adventure_phase['active']:
+            handle_adventure_result(selected_name)
+            return
+
+        # Character creation flow
         current_wheel_config = get_current_wheel_config()
         current_wheel = current_wheel_config[wheel_index['i']]
-        
-        # Store selection - handles all cases including multiple powers/skills/magics
-        # They'll be stored as "Power 1", "Power 2", etc.
+
+        # Store selection
         state.selections[current_wheel] = selected_name
-        
+
         # Load background image if territory is selected
         if current_wheel == 'Territory':
             root.after(100, lambda: load_background_image(selected_name))
-        
+
         update_char_display()
-        
+
         wheel_index['i'] += 1
         current_wheel_config = get_current_wheel_config()
         if wheel_index['i'] < len(current_wheel_config):
             current_lbl.config(text=f'Rueda: {current_wheel_config[wheel_index["i"]]}')
             show_current_wheel()
         else:
-            current_lbl.config(text='¡Personaje Completo!')
-            spin_btn.config(state='disabled')
-            messagebox.showinfo('Éxito', '¡Personaje completamente generado!')
+            # Character creation complete - start adventure!
+            start_adventure_phase()
 
     def show_current_wheel():
         """Display current wheel"""
+        if adventure_phase['active']:
+            show_adventure_wheel()
+            return
         current_wheel_config = get_current_wheel_config()
         if wheel_index['i'] < len(current_wheel_config):
             wheel_name = current_wheel_config[wheel_index['i']]
@@ -912,33 +1638,37 @@ def main():
         """Spin button"""
         if spinning['active']:
             return
-        current_wheel_config = get_current_wheel_config()
-        if wheel_index['i'] >= len(current_wheel_config):
-            messagebox.showinfo('Completo', '¡Personaje generado!')
-            return
-        
-        wheel_name = current_wheel_config[wheel_index['i']]
+
+        if adventure_phase['active']:
+            wheel_name = get_adventure_wheel_name()
+        else:
+            current_wheel_config = get_current_wheel_config()
+            if wheel_index['i'] >= len(current_wheel_config):
+                return
+            wheel_name = current_wheel_config[wheel_index['i']]
+
         segments = build_wheel_data(wheel_name)
-        
+
         if not segments:
             messagebox.showwarning('Error', f'No hay opciones para {wheel_name}')
             return
-        
+
         # Weighted random
         total_weight = sum(s['weight'] for s in segments)
         choice = random.uniform(0, total_weight)
         current = 0
         final_idx = 0
-        
+
         for i, seg in enumerate(segments):
             current += seg['weight']
             if choice <= current:
                 final_idx = i
                 break
-        
+
         animate_spin(segments, final_idx)
 
     spin_btn.config(command=spin_action)
+    end_run_btn.config(command=lambda: end_run('manual'))
     show_current_wheel()
     update_char_display()
 
