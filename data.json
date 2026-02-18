@@ -1,0 +1,348 @@
+{
+  "character_template": {
+    "fields": [
+      {"name": "name", "type": "string", "desc": "Nombre del personaje"},
+      {"name": "race", "type": "wheel", "desc": "Raza del personaje", "wheel": "races"},
+      {"name": "sex", "type": "enum", "options": ["Male", "Female", "Other"], "desc": "Sexo o género"},
+      {"name": "age", "type": "int", "desc": "Edad del personaje", "min": 10, "max": 500},
+      {"name": "height", "type": "string", "desc": "Altura (según raza)"},
+      {"name": "archetype", "type": "wheel", "desc": "Arquetipo principal", "wheel": "archetypes"},
+      {"name": "class", "type": "wheel", "desc": "Clase o profesión", "wheel": "classes", "depends_on": "archetype"},
+      {"name": "magic_type", "type": "wheel", "desc": "Tipo de magia (si aplica)", "wheel": "magic_types", "depends_on": ["archetype", "class", "race"]},
+      {"name": "spells", "type": "list", "desc": "Hechizos conocidos (opcional)", "wheel": "spells", "depends_on": ["magic_type", "class", "race"], "optional": true},
+      {"name": "alignment", "type": "wheel", "desc": "Alineación moral", "wheel": "alignments"},
+      {"name": "place", "type": "wheel", "desc": "Lugar de origen o actual", "wheel": "places"},
+      {"name": "stats", "type": "object", "fields": [
+        {"name": "strength", "type": "int", "desc": "Fuerza física"},
+        {"name": "agility", "type": "int", "desc": "Agilidad y reflejos"},
+        {"name": "durability", "type": "int", "desc": "Resistencia y salud"},
+        {"name": "intelligence", "type": "int", "desc": "Inteligencia y sabiduría"},
+        {"name": "charisma", "type": "int", "desc": "Carisma e influencia"}
+      ]},
+      {"name": "skills", "type": "list", "desc": "Lista de habilidades", "wheel": "skills"},
+      {"name": "personality_traits", "type": "list", "desc": "Rasgos de personalidad (mínimo 3)", "min": 3, "wheel": "personality_traits"},
+      {"name": "events", "type": "list", "desc": "Sucesos importantes en la vida", "wheel": "events"},
+      {"name": "actions", "type": "list", "desc": "Acciones destacadas", "wheel": "actions"},
+      {"name": "powers", "type": "list", "desc": "Poderes especiales (opcional)", "wheel": "powers", "optional": true},
+      {"name": "objects", "type": "list", "desc": "Objetos especiales (opcional)", "wheel": "objects", "optional": true}
+    ]
+  },
+  "dependencies": [
+    {"if": {"powers": "Blood Frenzy"}, "then": {"probability_modifiers": {"events.Bandit Ambush": {"trigger": 2.0}}}},
+    {"if": {"powers": "Night Vision"}, "then": {"probability_modifiers": {"events.Night Assault": {"avoid": 1.5}}}},
+    {"if": {"skills": "Lockpicking"}, "then": {"probability_modifiers": {"events.Relic Discovery": {"trigger": 1.5}}}},
+    {"if": {"skills": "Investigation"}, "then": {"probability_modifiers": {"events.Council Betrayal": {"expose": 2.0}}}},
+    {"if": {"race": "Vampire"}, "then": {"powers": ["Regeneration", "Blood Drain"]}},
+    {"if": {"race": "Werewolf"}, "then": {"powers": ["Regeneration", "Animal Transformation"]}},
+    {"if": {"race": "Demon"}, "then": {"powers": ["Mind Control", "Shadow Manipulation"]}},
+    {"if": {"class": "Assassin"}, "then": {"skills": ["Stealth", "Trap Setting"]}},
+    {"if": {"class": "Bard"}, "then": {"skills": ["Persuasion"]}}
+  ],
+  "alignments": [
+    {"name": "Lawful Good", "weight": 5},
+    {"name": "Neutral Good", "weight": 5},
+    {"name": "Chaotic Good", "weight": 5},
+    {"name": "Lawful Neutral", "weight": 5},
+    {"name": "True Neutral", "weight": 5},
+    {"name": "Chaotic Neutral", "weight": 5},
+    {"name": "Lawful Evil", "weight": 5},
+    {"name": "Neutral Evil", "weight": 5},
+    {"name": "Chaotic Evil", "weight": 5}
+  ],
+  "archetypes": [
+    {"name": "Warrior", "classes": ["Sellsword", "Knight", "Barbarian", "Gladiator", "Mercenary", "Bodyguard", "Arena Champion", "Warlord", "Duelist", "Monster Hunter"]},
+    {"name": "Mage", "classes": ["Elementalist", "Illusionist", "Necromancer", "Enchanter", "Sorcerer", "Alchemist", "Blood Mage", "Chronomancer", "Runecaster", "Shadowmancer"]},
+    {"name": "Rogue", "classes": ["Thief", "Assassin", "Spy", "Smuggler", "Pickpocket", "Saboteur", "Shadow Dancer", "Fence", "Con Artist", "Poisoner"]},
+    {"name": "Priest", "classes": ["Cleric", "Inquisitor", "Exorcist", "Healer", "Oracle", "Cultist", "Prophet", "Monk", "Acolyte", "Heretic"]},
+    {"name": "Hunter", "classes": ["Beast Hunter", "Monster Hunter", "Tracker", "Scout", "Trapper", "Falconer", "Witch Hunter", "Bounty Hunter", "Ranger", "Beast Tamer"]},
+    {"name": "Bard", "classes": ["Minstrel", "Jester", "Storyteller", "Spy Bard", "Diplomat", "Troubadour", "Chronicler", "Courtier", "Seducer", "Propagandist"]},
+    {"name": "Druid", "classes": ["Shapeshifter", "Herbalist", "Beast Friend", "Stormcaller", "Warden", "Feral", "Nature Priest", "Moon Druid", "Spirit Guide", "Plague Druid"]},
+    {"name": "Merchant", "classes": ["Trader", "Smuggler", "Black Market Dealer", "Banker", "Artisan", "Caravan Master", "Fence", "Drug Dealer", "Slave Trader", "Relic Seller"]},
+    {"name": "Noble", "classes": ["Duke", "Count", "Baron", "Prince", "Princess", "Chamberlain", "Steward", "Court Mage", "Royal Assassin", "Heir"]},
+    {"name": "Beast", "classes": ["Werewolf", "Vampire", "Ghoul", "Lizardman", "Minotaur", "Harpy", "Chimera", "Ogre", "Troll", "Beastman"]}
+  ],
+  "magic_types": [
+    {"name": "None", "weight": 10},
+    {"name": "Arcane", "weight": 8},
+    {"name": "Divine", "weight": 8},
+    {"name": "Nature", "weight": 8},
+    {"name": "Blood", "weight": 6},
+    {"name": "Shadow", "weight": 6},
+    {"name": "Infernal", "weight": 6},
+    {"name": "Fire", "weight": 5},
+    {"name": "Water", "weight": 5},
+    {"name": "Earth", "weight": 5},
+    {"name": "Air", "weight": 5},
+    {"name": "Lightning", "weight": 5},
+    {"name": "Ice", "weight": 5}
+  ],
+  "races": [
+    {"name": "Human", "weight": 20, "height_options": [{"name": "1.60 m", "weight": 30}, {"name": "1.75 m", "weight": 50}, {"name": "1.90 m", "weight": 20}]},
+    {"name": "Elf", "weight": 10, "height_options": [{"name": "1.60 m", "weight": 10}, {"name": "1.80 m", "weight": 70}, {"name": "2.00 m", "weight": 20}]},
+    {"name": "Dark Elf", "weight": 8, "height_options": [{"name": "1.70 m", "weight": 60}, {"name": "1.85 m", "weight": 40}]},
+    {"name": "Dwarf", "weight": 8, "height_options": [{"name": "1.20 m", "weight": 30}, {"name": "1.40 m", "weight": 70}]},
+    {"name": "Orc", "weight": 8, "height_options": [{"name": "1.70 m", "weight": 30}, {"name": "1.90 m", "weight": 70}]},
+    {"name": "Vampire", "weight": 5, "height_options": [{"name": "1.80 m", "weight": 100}]},
+    {"name": "Werewolf", "weight": 5, "height_options": [{"name": "1.90 m", "weight": 100}]},
+    {"name": "Demon", "weight": 3, "height_options": [{"name": "2.00 m", "weight": 100}]},
+    {"name": "Fallen Angel", "weight": 2, "height_options": [{"name": "1.80 m", "weight": 100}]},
+    {"name": "Gnome", "weight": 5, "height_options": [{"name": "1.00 m", "weight": 100}]},
+    {"name": "Beastman", "weight": 4, "height_options": [{"name": "2.10 m", "weight": 100}]}
+  ],
+  "places": [
+    {"name": "Elven Forest", "weight": 8},
+    {"name": "Human City (Good Factions)", "weight": 8},
+    {"name": "Dwarven Hold", "weight": 8},
+    {"name": "Human Slums", "weight": 8},
+    {"name": "Outlands", "weight": 8}
+  ],
+  "territory_image_map": {
+    "Elven Forest": "Elven Forest.jpg",
+    "Human City (Good Factions)": "Human City (Good Factions).jpg",
+    "Dwarven Hold": "Dwarven Hold.jpg",
+    "Human Slums": "Human Slums.jpg",
+    "Outlands": "Outlands.jpg"
+  },
+  "events": [
+    {"name": "Night Assault", "weight": 2, "desc": "Asalto nocturno por criaturas sombrías.", "outcomes": [
+      {"name": "Survive", "weight": 60, "narrative": "Sobrevives al ataque.", "effects": {"agi": 1}},
+      {"name": "Wounded", "weight": 40, "narrative": "Resultas herido.", "effects": {"str": -1}}
+    ]},
+    {"name": "Council Betrayal", "weight": 2, "desc": "Traición en el consejo de sabios.", "outcomes": [
+      {"name": "Expose Traitor", "weight": 40, "narrative": "Descubres al traidor.", "effects": {"cha": 1}},
+      {"name": "Framed", "weight": 60, "narrative": "Te culpan injustamente.", "effects": {"cha": -1}}
+    ]},
+    {"name": "Relic Discovery", "weight": 2, "desc": "Descubrimiento de una reliquia antigua.", "outcomes": [
+      {"name": "Gain Power", "weight": 30, "narrative": "Obtienes un poder especial.", "effects": {"int": 1}},
+      {"name": "Cursed", "weight": 70, "narrative": "La reliquia te maldice.", "effects": {"int": -1}}
+    ]},
+    {"name": "Shadow Duel", "weight": 2, "desc": "Duelo en las sombras contra un rival.", "outcomes": [
+      {"name": "Win", "weight": 50, "narrative": "Vences a tu rival.", "effects": {"str": 1}},
+      {"name": "Lose", "weight": 50, "narrative": "Pierdes el duelo.", "effects": {"str": -1}}
+    ]},
+    {"name": "Forbidden Pact", "weight": 2, "desc": "Pacto prohibido con fuerzas oscuras.", "outcomes": [
+      {"name": "Power Gained", "weight": 40, "narrative": "Obtienes poder oscuro.", "effects": {"int": 1}},
+      {"name": "Soul Lost", "weight": 60, "narrative": "Pierdes parte de tu alma.", "effects": {"cha": -1}}
+    ]},
+    {"name": "Haunted Dream", "weight": 2, "desc": "Sueño inquietante que afecta tu destino.", "outcomes": [
+      {"name": "Insight", "weight": 50, "narrative": "Obtienes una visión útil.", "effects": {"int": 1}},
+      {"name": "Fear", "weight": 50, "narrative": "Sufres miedo persistente.", "effects": {"cha": -1}}
+    ]},
+    {"name": "Bandit Ambush", "weight": 2, "desc": "Emboscada en el camino.", "outcomes": [
+      {"name": "Fight Off", "weight": 60, "narrative": "Vences a los bandidos tras un combate feroz.", "effects": {"str": 1}},
+      {"name": "Robbed", "weight": 40, "narrative": "Te quitan posesiones y pierdes recursos.", "effects": {"cha": -1}}
+    ]},
+    {"name": "Ancient Relic", "weight": 2, "desc": "Encuentras un artefacto poderoso.", "outcomes": [
+      {"name": "Blessing", "weight": 30, "narrative": "El relicario te imbuye de poder.", "effects": {"int": 1}},
+      {"name": "Curse", "weight": 70, "narrative": "Una maldición te marca; pierdes cordura.", "effects": {"int": -1}}
+    ]},
+    {"name": "Cursed Fate", "weight": 2, "desc": "Una maldición poderosa recae sobre ti.", "outcomes": [
+      {"name": "Lose Stat", "weight": 50, "narrative": "Pierdes 1 punto de una stat aleatoria.", "effects": {"random_stat": -1}},
+      {"name": "Nothing Happens", "weight": 40, "narrative": "Resistes la maldición y no ocurre nada.", "effects": {}},
+      {"name": "Strange Buff", "weight": 10, "narrative": "La maldición se retuerce y te otorga un poder extraño.", "effects": {"random_stat": 2}}
+    ]},
+    {"name": "Blessing of Chaos", "weight": 2, "desc": "Una bendición caótica altera tu destino.", "outcomes": [
+      {"name": "Mild Luck", "weight": 50, "narrative": "Recibes un pequeño beneficio.", "effects": {"random_stat": 1}},
+      {"name": "No Effect", "weight": 40, "narrative": "No ocurre nada especial.", "effects": {}},
+      {"name": "Backfire", "weight": 10, "narrative": "La bendición se vuelve en tu contra.", "effects": {"random_stat": -2}}
+    ]},
+    {"name": "Demonic Invasion", "weight": 1, "desc": "Una horda demoníaca asola la región.", "outcomes": [
+      {"name": "Heroic Stand", "weight": 10, "narrative": "Resistes y te conviertes en leyenda.", "effects": {"cha": 3}},
+      {"name": "Corruption", "weight": 90, "narrative": "Eres corrompido y te unes a los demonios.", "effects": {"int": -2}}
+    ]},
+    {"name": "Elven Prophecy", "weight": 1, "desc": "Una antigua profecía élfica se cumple.", "outcomes": [
+      {"name": "Chosen One", "weight": 5, "narrative": "Eres el elegido para salvar el bosque.", "effects": {"int": 1}},
+      {"name": "Doomed", "weight": 95, "narrative": "La profecía anuncia tu caída.", "effects": {"str": -2}}
+    ]},
+    {"name": "Plague Outbreak", "weight": 1, "desc": "Una plaga mortal se extiende.", "outcomes": [
+      {"name": "Immunity", "weight": 10, "narrative": "Eres inmune y ayudas a otros.", "effects": {"durability": 2}},
+      {"name": "Infected", "weight": 90, "narrative": "Enfermas gravemente.", "effects": {"durability": -2}}
+    ]},
+    {"name": "Forbidden Love", "weight": 1, "desc": "Un amor prohibido cambia tu destino.", "outcomes": [
+      {"name": "United", "weight": 20, "narrative": "Desafías las normas y permaneces junto a tu amor.", "effects": {"cha": 2}},
+      {"name": "Tragedy", "weight": 80, "narrative": "El amor termina en tragedia.", "effects": {"cha": -2}}
+    ]}
+  ],
+  "actions": [
+    {"name": "Slay a Demon", "desc": "Derrotaste a un demonio en combate singular.", "weight": 1},
+    {"name": "Steal the Crown", "desc": "Robaste la corona de un rey corrupto.", "weight": 1},
+    {"name": "Survive the Plague", "desc": "Sobreviviste a una plaga mortal que asoló tu tierra.", "weight": 1},
+    {"name": "Break a Curse", "desc": "Lograste romper una maldición ancestral.", "weight": 1},
+    {"name": "Tame a Dragon", "desc": "Domesticastes a un dragón salvaje.", "weight": 1},
+    {"name": "Escape the Abyss", "desc": "Escapaste de una dimensión infernal.", "weight": 1},
+    {"name": "Win a Tournament", "desc": "Venciste en un torneo de campeones.", "weight": 1},
+    {"name": "Rescue a Royal", "desc": "Rescataste a un miembro de la realeza.", "weight": 1},
+    {"name": "Forge a Legendary Weapon", "desc": "Forjaste un arma legendaria.", "weight": 1},
+    {"name": "Seal a Portal", "desc": "Cerraste un portal a otro mundo.", "weight": 1}
+  ],
+  "personality_traits": [
+    {"name": "Brave", "desc": "Enfrenta el peligro sin dudar.", "weight": 1},
+    {"name": "Cunning", "desc": "Siempre encuentra una salida ingeniosa.", "weight": 1},
+    {"name": "Merciless", "desc": "No muestra piedad con sus enemigos.", "weight": 1},
+    {"name": "Loyal", "desc": "Nunca traiciona a sus aliados.", "weight": 1},
+    {"name": "Ambitious", "desc": "Siempre busca más poder o reconocimiento.", "weight": 1},
+    {"name": "Stoic", "desc": "Rara vez muestra emociones.", "weight": 1},
+    {"name": "Compassionate", "desc": "Ayuda a los necesitados.", "weight": 1},
+    {"name": "Vengeful", "desc": "No olvida las ofensas y busca venganza.", "weight": 1},
+    {"name": "Curious", "desc": "Desea descubrir todos los secretos.", "weight": 1},
+    {"name": "Reckless", "desc": "Actúa sin pensar en las consecuencias.", "weight": 1}
+  ],
+  "objects": [
+    {"name": "Cursed Sword", "weight": 2, "desc": "Espada maldita que otorga poder a cambio de salud."},
+    {"name": "Shadow Amulet", "weight": 2, "desc": "Amuleto que permite moverse entre sombras."},
+    {"name": "Book of the Dead", "weight": 2, "desc": "Libro que permite invocar espectros."},
+    {"name": "Celestial Armor", "weight": 2, "desc": "Armadura sagrada que protege contra magia oscura."},
+    {"name": "Venom Dagger", "weight": 2, "desc": "Daga venenosa ideal para asesinos."},
+    {"name": "Enchanted Flute", "weight": 2, "desc": "Flauta mágica que controla criaturas."},
+    {"name": "Ring of Transformation", "weight": 2, "desc": "Permite transformarse en animal."},
+    {"name": "Obsidian Staff", "weight": 2, "desc": "Bastón de obsidiana que canaliza magia oscura."},
+    {"name": "Iron Shield", "weight": 2, "desc": "Escudo resistente a ataques físicos."},
+    {"name": "Blood Chalice", "weight": 2, "desc": "Cáliz que otorga regeneración vampírica."}
+  ],
+  "spells": [
+    {"name": "Arcane Missile", "weight": 3, "desc": "Dispara proyectiles de energía arcana."},
+    {"name": "Shadow Veil", "weight": 3, "desc": "Cubre al lanzador en sombras, volviéndolo difícil de ver."},
+    {"name": "Curse of Weakness", "weight": 2, "desc": "Debilita a un enemigo temporalmente."},
+    {"name": "Nature Blessing", "weight": 3, "desc": "Bendición que sana y fortalece."},
+    {"name": "Chain Lightning", "weight": 2, "desc": "Rayo que salta entre varios enemigos."},
+    {"name": "Frost Nova", "weight": 2, "desc": "Explosión de hielo que congela a los enemigos cercanos."},
+    {"name": "Fireball", "weight": 2, "desc": "Bola de fuego que explota en área."},
+    {"name": "Beast Call", "weight": 2, "desc": "Invoca bestias salvajes para ayudarte."},
+    {"name": "Wind Walk", "weight": 2, "desc": "Permite moverse rápidamente como el viento."},
+    {"name": "Sanctuary", "weight": 2, "desc": "Crea un área protegida contra el mal."},
+    {"name": "Earthquake", "weight": 1, "desc": "Provoca un temblor que derriba a los enemigos."},
+    {"name": "Dark Flame", "weight": 1, "desc": "Llamas oscuras que consumen mágicamente."},
+    {"name": "Blood Curse", "weight": 1, "desc": "Maldición que debilita la vitalidad."},
+    {"name": "Blood Drain", "weight": 1, "desc": "Extrae vida de un enemigo."}
+  ],
+  "powers": [
+    {"name": "Regeneration", "weight": 3, "desc": "Recupera salud de forma acelerada."},
+    {"name": "Animal Instincts", "weight": 3, "desc": "Sentidos agudos y reflejos animales."},
+    {"name": "Iron Will", "weight": 3, "desc": "Resistencia mental a la manipulación."},
+    {"name": "Night Vision", "weight": 2, "desc": "Ve perfectamente en la oscuridad."},
+    {"name": "Titanic Strength", "weight": 2, "desc": "Fuerza física sobrehumana."},
+    {"name": "Animal Transformation", "weight": 1, "desc": "Puede transformarse en bestia."},
+    {"name": "Shadow Step (innate)", "weight": 2, "desc": "Desaparece en las sombras, sin magia."},
+    {"name": "Stone Skin (innate)", "weight": 2, "desc": "La piel se endurece como roca."},
+    {"name": "Blood Frenzy", "weight": 1, "desc": "Entra en furia incontrolable en combate."},
+    {"name": "Unbreakable", "weight": 1, "desc": "No puede ser dominado mentalmente."},
+    {"name": "Wings (innate)", "weight": 1, "desc": "Posee alas funcionales para volar."},
+    {"name": "Venomous Bite", "weight": 1, "desc": "Mordedura que inyecta veneno."},
+    {"name": "Blood Drain", "weight": 1, "desc": "Drena vida de sus enemigos."},
+    {"name": "Mind Control", "weight": 1, "desc": "Controla mentes débiles."},
+    {"name": "Shadow Manipulation", "weight": 1, "desc": "Manipula sombras a voluntad."}
+  ],
+  "skills": [
+    {"name": "Tracking", "weight": 2, "desc": "Rastrea criaturas y enemigos."},
+    {"name": "Stealth", "weight": 2, "desc": "Permite moverse sin ser detectado."},
+    {"name": "Persuasion", "weight": 2, "desc": "Convence a otros de hacer lo que quieres."},
+    {"name": "Smithing", "weight": 2, "desc": "Forja armas y armaduras."},
+    {"name": "Beast Taming", "weight": 2, "desc": "Domina y controla bestias salvajes."},
+    {"name": "Trap Setting", "weight": 2, "desc": "Coloca trampas para enemigos."},
+    {"name": "Survival", "weight": 1, "desc": "Sobrevive en entornos hostiles."},
+    {"name": "Intimidation", "weight": 1, "desc": "Intimida a otros para obtener lo que quieres."},
+    {"name": "Disguise", "weight": 1, "desc": "Se disfraza y asume identidades falsas."},
+    {"name": "Lockpicking", "weight": 1, "desc": "Abre cerraduras y cofres sin llave."},
+    {"name": "Acrobatics", "weight": 1, "desc": "Realiza maniobras ágiles y difíciles."},
+    {"name": "Investigation", "weight": 1, "desc": "Descubre pistas y resuelve misterios."},
+    {"name": "Medicine", "weight": 1, "desc": "Trata heridas y enfermedades sin magia."},
+    {"name": "Leadership", "weight": 1, "desc": "Inspira y dirige a grupos en situaciones difíciles."},
+    {"name": "Navigation", "weight": 1, "desc": "Se orienta y navega en terrenos desconocidos."},
+    {"name": "Alchemy", "weight": 1, "desc": "Prepara pociones y elixires mágicos."},
+    {"name": "Horsemanship", "weight": 1, "desc": "Monta y cuida caballos y bestias de carga."}
+  ],
+  "genders": [
+    {"name": "Male", "weight": 50},
+    {"name": "Female", "weight": 50}
+  ],
+  "ages": [
+    {"name": "Child (5-12)", "weight": 5},
+    {"name": "Teenager (13-18)", "weight": 10},
+    {"name": "Young Adult (19-35)", "weight": 40},
+    {"name": "Adult (36-60)", "weight": 30},
+    {"name": "Elder (60+)", "weight": 10},
+    {"name": "Immortal", "weight": 5}
+  ],
+  "weapon_masteries": [
+    {"name": "Novice", "weight": 40, "bonus": 0},
+    {"name": "Apprentice", "weight": 30, "bonus": 1},
+    {"name": "Skilled", "weight": 20, "bonus": 2},
+    {"name": "Master", "weight": 8, "bonus": 3},
+    {"name": "Legendary", "weight": 2, "bonus": 5}
+  ],
+  "power_skills": [
+    {"name": "Untrained", "weight": 40, "bonus": 0},
+    {"name": "Novice", "weight": 30, "bonus": 1},
+    {"name": "Advanced", "weight": 20, "bonus": 2},
+    {"name": "Expert", "weight": 8, "bonus": 3},
+    {"name": "Master", "weight": 2, "bonus": 5}
+  ],
+  "magic_skills": [
+    {"name": "Untrained", "weight": 40, "bonus": 0},
+    {"name": "Novice", "weight": 30, "bonus": 1},
+    {"name": "Apprentice", "weight": 20, "bonus": 2},
+    {"name": "Adept", "weight": 8, "bonus": 3},
+    {"name": "Archmage", "weight": 2, "bonus": 5}
+  ],
+  "skill_efficiency": [
+    {"name": "Poor (50%)", "weight": 10, "multiplier": 0.5},
+    {"name": "Average (75%)", "weight": 30, "multiplier": 0.75},
+    {"name": "Good (100%)", "weight": 40, "multiplier": 1.0},
+    {"name": "Excellent (125%)", "weight": 15, "multiplier": 1.25},
+    {"name": "Perfect (150%)", "weight": 5, "multiplier": 1.5}
+  ],
+  "stat_values": [
+    {"name": "1 (Abysmal)", "weight": 2, "value": 1},
+    {"name": "2 (Poor)", "weight": 5, "value": 2},
+    {"name": "3 (Below Average)", "weight": 10, "value": 3},
+    {"name": "4 (Average)", "weight": 20, "value": 4},
+    {"name": "5 (Good)", "weight": 25, "value": 5},
+    {"name": "6 (Excellent)", "weight": 20, "value": 6},
+    {"name": "7 (Great)", "weight": 12, "value": 7},
+    {"name": "8 (Outstanding)", "weight": 4, "value": 8},
+    {"name": "9 (Superhuman)", "weight": 1, "value": 9},
+    {"name": "10 (Legendary)", "weight": 1, "value": 10}
+  ],
+  "weapons": [
+    {"name": "None", "weight": 30},
+    {"name": "Sword", "weight": 15},
+    {"name": "Axe", "weight": 12},
+    {"name": "Bow", "weight": 12},
+    {"name": "Staff", "weight": 8},
+    {"name": "Dagger", "weight": 10},
+    {"name": "Spear", "weight": 8},
+    {"name": "Hammer", "weight": 5}
+  ],
+  "power_count": [
+    {"name": "0 (None)", "weight": 70},
+    {"name": "1 (Single)", "weight": 20},
+    {"name": "2 (Dual)", "weight": 7},
+    {"name": "3 (Triple)", "weight": 2},
+    {"name": "4 (Quad)", "weight": 1},
+    {"name": "5 (Legendary)", "weight": 1}
+  ],
+  "magic_count": [
+    {"name": "0 (None)", "weight": 60},
+    {"name": "1 (Single)", "weight": 30},
+    {"name": "2 (Dual)", "weight": 7},
+    {"name": "3 (Triple)", "weight": 2},
+    {"name": "4 (Quad)", "weight": 1},
+    {"name": "5 (Legendary)", "weight": 1}
+  ],
+  "skills_count": [
+    {"name": "0 (None)", "weight": 10},
+    {"name": "1 (Single)", "weight": 20},
+    {"name": "2 (Dual)", "weight": 30},
+    {"name": "3 (Triple)", "weight": 25},
+    {"name": "4 (Quad)", "weight": 12},
+    {"name": "5 (Expert)", "weight": 3}
+  ],
+  "items_count": [
+    {"name": "0 (None)", "weight": 30},
+    {"name": "1 (Single)", "weight": 35},
+    {"name": "2 (Dual)", "weight": 20},
+    {"name": "3 (Triple)", "weight": 10},
+    {"name": "4 (Quad)", "weight": 4},
+    {"name": "5 (Legendary)", "weight": 1}
+  ]
+}
