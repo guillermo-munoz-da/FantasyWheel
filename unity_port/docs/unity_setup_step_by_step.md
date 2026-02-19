@@ -55,8 +55,12 @@ powershell -ExecutionPolicy Bypass -File c:/workspace/unity_port/tools/sanitize_
 ## 6) Ejecutar pruebas manuales
 
 1. Presionar Play.
-2. Pulsar `Spin Character` hasta completar las ruedas.
-3. Pulsar `Spin Adventure` para generar Activity/Event/Action.
+2. Pulsar `Spin Character` hasta completar las ruedas de personaje (incluye Height, Skill y Personality).
+3. Pulsar `Spin Adventure` en secuencia:
+   - primer click: `Activity`
+   - segundo click: `Event`
+   - tercer click: `Action`
+   - cuarto click: inicia una nueva aventura desde `Activity`
 4. Probar `Save` -> detener Play -> Play -> `Load`.
 5. Probar `Rewarded Mock` para validar hook de monetización.
 

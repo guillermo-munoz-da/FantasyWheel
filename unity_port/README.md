@@ -43,7 +43,8 @@ Si el setup manual falla, añade `DebugUiAutoBuilder` en un objeto vacío y Play
 
 - F0: arranque de app, bootstrap y carga de JSON.
 - F1: spin ponderado por rueda.
-- F2 (slice): flujo de creación de personaje con dependencias básicas Archetype -> Class.
+- F2 (slice): flujo de creación de personaje con más ruedas (incluye Height/Skill/Personality) y dependencia Archetype -> Class.
+- F4 (slice): aventura por fases (Activity -> Event -> Action en clicks sucesivos).
 - F6 (preparación): hooks de anuncios mock y persistencia local.
 
 ## Limitaciones actuales (esperadas)

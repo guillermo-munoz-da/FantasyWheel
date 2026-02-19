@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using DarkWheel.Core;
 
 namespace DarkWheel.Flow
@@ -35,7 +37,7 @@ namespace DarkWheel.Flow
             return wheel;
         }
 
-        public WheelDefinition BuildEventWheel()
+        public WheelDefinition BuildEventWheel(string selectedActivity)
         {
             var wheel = new WheelDefinition { Id = "AdventureEvent" };
             if (_data.adventure_events == null)
@@ -43,13 +45,21 @@ namespace DarkWheel.Flow
                 return wheel;
             }
 
+            var activityTags = GetTags(_data.adventure_activities, selectedActivity);
+
             foreach (var option in _data.adventure_events)
             {
+                var weight = Math.Max(1, option.weight);
+                if (activityTags.Count > 0 && option.tags != null && option.tags.Any(tag => activityTags.Contains(tag)))
+                {
+                    weight = Math.Max(1, weight * 2);
+                }
+
                 wheel.Options.Add(new WheelOption
                 {
                     Id = option.name,
                     Label = option.name,
-                    Weight = Math.Max(1, option.weight),
+                    Weight = weight,
                     Description = option.desc,
                     IsAvailable = _ => true
                 });
@@ -58,7 +68,7 @@ namespace DarkWheel.Flow
             return wheel;
         }
 
-        public WheelDefinition BuildActionWheel()
+        public WheelDefinition BuildActionWheel(string selectedActivity, string selectedEvent)
         {
             var wheel = new WheelDefinition { Id = "AdventureAction" };
             if (_data.adventure_actions == null)
@@ -66,19 +76,49 @@ namespace DarkWheel.Flow
                 return wheel;
             }
 
+            var activityTags = GetTags(_data.adventure_activities, selectedActivity);
+            var eventTags = GetTags(_data.adventure_events, selectedEvent);
+            var mergedTags = new HashSet<string>(activityTags, StringComparer.OrdinalIgnoreCase);
+            foreach (var tag in eventTags)
+            {
+                mergedTags.Add(tag);
+            }
+
             foreach (var option in _data.adventure_actions)
             {
+                var weight = Math.Max(1, option.weight);
+                if (mergedTags.Count > 0 && option.tags != null && option.tags.Any(tag => mergedTags.Contains(tag)))
+                {
+                    weight = Math.Max(1, weight * 2);
+                }
+
                 wheel.Options.Add(new WheelOption
                 {
                     Id = option.name,
                     Label = option.name,
-                    Weight = Math.Max(1, option.weight),
+                    Weight = weight,
                     Description = option.desc,
                     IsAvailable = _ => true
                 });
             }
 
             return wheel;
+        }
+
+        private static HashSet<string> GetTags(List<NamedWeightedOption> source, string selectedName)
+        {
+            if (source == null || string.IsNullOrWhiteSpace(selectedName))
+            {
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            var selected = source.FirstOrDefault(item => string.Equals(item.name, selectedName, StringComparison.OrdinalIgnoreCase));
+            if (selected?.tags == null)
+            {
+                return new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            }
+
+            return new HashSet<string>(selected.tags, StringComparer.OrdinalIgnoreCase);
         }
     }
 }

@@ -13,6 +13,10 @@ namespace DarkWheel.Core
         public List<NamedWeightedOption> places;
         public List<NamedWeightedOption> magic_types;
         public List<NamedWeightedOption> genders;
+        public List<NamedWeightedOption> ages;
+        public List<NamedWeightedOption> age_brackets;
+        public List<NamedWeightedOption> skills;
+        public List<NamedWeightedOption> personality_traits;
         public List<NamedWeightedOption> adventure_activities;
         public List<NamedWeightedOption> adventure_events;
         public List<NamedWeightedOption> adventure_actions;
@@ -26,6 +30,23 @@ namespace DarkWheel.Core
         public string desc;
         public string[] tags;
         public string[] classes;
+        public List<HeightOption> height_options;
+        public AgeRange age_range;
+    }
+
+    [Serializable]
+    public class HeightOption
+    {
+        public string name;
+        public int weight = 1;
+    }
+
+    [Serializable]
+    public class AgeRange
+    {
+        public int min;
+        public int max;
+        public float immortal_chance;
     }
 
     public class WheelDefinition
