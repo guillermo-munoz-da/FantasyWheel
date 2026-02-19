@@ -29,9 +29,9 @@ namespace DarkWheel.UI
             var canvas = EnsureCanvas();
             var panel = EnsurePanel(canvas.transform as RectTransform);
 
-            var currentWheelText = EnsureText(panel, "CurrentWheelText", 30f, 32f, 26f);
-            var currentResultText = EnsureText(panel, "CurrentResultText", 30f, 32f, 24f);
-            var summaryText = EnsureText(panel, "SummaryText", 30f, 220f, 22f);
+            var currentWheelText = EnsureText(panel, "CurrentWheelText", 600f, 56f, 26f);
+            var currentResultText = EnsureText(panel, "CurrentResultText", 600f, 56f, 24f);
+            var summaryText = EnsureText(panel, "SummaryText", 600f, 320f, 22f);
 
             var spinCharacter = EnsureButton(panel, "Spin Character", "Spin Character");
             var adventure = EnsureButton(panel, "Adventure", "Adventure");
@@ -130,7 +130,7 @@ namespace DarkWheel.UI
             panelRect.anchorMax = new Vector2(0f, 1f);
             panelRect.pivot = new Vector2(0f, 1f);
             panelRect.anchoredPosition = new Vector2(24f, -24f);
-            panelRect.sizeDelta = new Vector2(640f, 0f);
+            panelRect.sizeDelta = new Vector2(680f, 0f);
 
             var image = panelObject.GetComponent<Image>();
             image.color = new Color(0f, 0f, 0f, 0.55f);
@@ -156,8 +156,9 @@ namespace DarkWheel.UI
             if (textObject == null)
             {
                 textObject = new GameObject(name, typeof(RectTransform), typeof(TextMeshProUGUI));
-                textObject.transform.SetParent(parent, false);
             }
+
+            textObject.transform.SetParent(parent, false);
 
             var textRect = textObject.GetComponent<RectTransform>();
             textRect.sizeDelta = new Vector2(width, height);
@@ -169,6 +170,12 @@ namespace DarkWheel.UI
             text.alignment = TextAlignmentOptions.Left;
             text.enableWordWrapping = true;
 
+            var layoutElement = textObject.GetComponent<LayoutElement>() ?? textObject.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = width;
+            layoutElement.preferredHeight = height;
+            layoutElement.flexibleWidth = 1f;
+            layoutElement.flexibleHeight = 0f;
+
             return text;
         }
 
@@ -178,8 +185,6 @@ namespace DarkWheel.UI
             if (buttonObject == null)
             {
                 buttonObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
-                buttonObject.transform.SetParent(parent, false);
-
                 var labelObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
                 labelObject.transform.SetParent(buttonObject.transform, false);
                 var labelRect = labelObject.GetComponent<RectTransform>();
@@ -189,8 +194,15 @@ namespace DarkWheel.UI
                 labelRect.offsetMax = Vector2.zero;
             }
 
+            buttonObject.transform.SetParent(parent, false);
+
             var rect = buttonObject.GetComponent<RectTransform>();
             rect.sizeDelta = new Vector2(280f, 64f);
+
+            var layoutElement = buttonObject.GetComponent<LayoutElement>() ?? buttonObject.AddComponent<LayoutElement>();
+            layoutElement.preferredWidth = 280f;
+            layoutElement.preferredHeight = 64f;
+            layoutElement.flexibleHeight = 0f;
 
             var image = buttonObject.GetComponent<Image>();
             image.color = new Color32(38, 50, 56, 255);
