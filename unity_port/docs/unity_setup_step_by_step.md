@@ -29,7 +29,7 @@ powershell -ExecutionPolicy Bypass -File c:/workspace/unity_port/tools/sanitize_
 ## 4) Crear UI debug mínima
 
 1. Crear `Canvas`.
-2. Dentro del Canvas, crear 3 `Text` (Legacy):
+2. Dentro del Canvas, crear 3 `Text - TextMeshPro`:
    - `CurrentWheelText`
    - `CurrentResultText`
    - `SummaryText`
@@ -41,7 +41,7 @@ powershell -ExecutionPolicy Bypass -File c:/workspace/unity_port/tools/sanitize_
    - `Load`
    - `Rewarded Mock`
 4. Crear objeto `UIController` y agregar `WheelDebugController`.
-5. Enlazar en el inspector los 3 `Text` al script.
+5. Enlazar en el inspector los 3 `TMP Text` al script.
 
 ## 5) Enlazar botones a métodos
 

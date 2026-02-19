@@ -24,7 +24,7 @@ Este paquete contiene una base funcional para iniciar el port del prototipo Pyth
 4. Crea una escena `Main.unity`.
 5. Añade un `GameObject` llamado `Bootstrap` y agrega `GameBootstrap`.
 6. Crea un Canvas simple con 3 `Text` y 6 botones:
-   - Text: `currentWheelText`, `currentResultText`, `summaryText`
+   - TMP Text: `currentWheelText`, `currentResultText`, `summaryText`
    - Botones: `Spin Character`, `Spin Adventure`, `Reset`, `Save`, `Load`, `Rewarded Mock`
 7. Añade `WheelDebugController` a un objeto `UIController` y enlaza referencias.
 8. Conecta eventos `OnClick` de botones a:

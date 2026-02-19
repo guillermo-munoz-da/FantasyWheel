@@ -2,17 +2,17 @@ using System.Collections.Generic;
 using System.Text;
 using DarkWheel.Bootstrap;
 using DarkWheel.Core;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace DarkWheel.UI
 {
     public class WheelDebugController : MonoBehaviour
     {
         [Header("UI")]
-        [SerializeField] private Text currentWheelText;
-        [SerializeField] private Text currentResultText;
-        [SerializeField] private Text summaryText;
+        [SerializeField] private TMP_Text currentWheelText;
+        [SerializeField] private TMP_Text currentResultText;
+        [SerializeField] private TMP_Text summaryText;
 
         private int _wheelIndex;
         private IReadOnlyList<string> _order;
