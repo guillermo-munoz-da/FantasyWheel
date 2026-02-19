@@ -37,6 +37,8 @@ Este paquete contiene una base funcional para iniciar el port del prototipo Pyth
 
 Guía detallada: `docs/unity_setup_step_by_step.md`.
 
+Si el setup manual falla, añade `DebugUiAutoBuilder` en un objeto vacío y Play para auto-configurar la UI debug.
+
 ## Qué puedes probar ya
 
 - F0: arranque de app, bootstrap y carga de JSON.

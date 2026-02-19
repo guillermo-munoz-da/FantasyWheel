@@ -17,8 +17,29 @@ namespace DarkWheel.UI
         private int _wheelIndex;
         private IReadOnlyList<string> _order;
 
+        public void BindTexts(TMP_Text wheelText, TMP_Text resultText, TMP_Text summary)
+        {
+            currentWheelText = wheelText;
+            currentResultText = resultText;
+            summaryText = summary;
+        }
+
         private void Start()
         {
+            if (GameBootstrap.Instance == null)
+            {
+                Debug.LogError("GameBootstrap no encontrado en escena.");
+                enabled = false;
+                return;
+            }
+
+            if (currentWheelText == null || currentResultText == null || summaryText == null)
+            {
+                Debug.LogError("WheelDebugController: faltan referencias TMP_Text en el inspector o en auto-setup.");
+                enabled = false;
+                return;
+            }
+
             _order = GameBootstrap.Instance.CharacterFlow.WheelOrder;
             _wheelIndex = 0;
             RefreshTexts("Listo para girar");

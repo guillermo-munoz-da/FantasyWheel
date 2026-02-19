@@ -60,6 +60,14 @@ powershell -ExecutionPolicy Bypass -File c:/workspace/unity_port/tools/sanitize_
 4. Probar `Save` -> detener Play -> Play -> `Load`.
 5. Probar `Rewarded Mock` para validar hook de monetización.
 
+## Modo rescate (si textos se solapan o botones no hacen nada)
+
+1. Crea un `GameObject` vacío llamado `AutoSetup` (raíz de escena).
+2. Añade el componente `DebugUiAutoBuilder`.
+3. Pulsa Play.
+4. El script crea/ajusta Canvas, EventSystem, textos TMP, botones, `UIController` y enlaces OnClick automáticamente.
+5. Si ya tenías objetos duplicados de UI manual, puedes borrarlos tras validar que el panel `DebugPanel` funciona.
+
 ## 7) Build Android debug
 
 1. `File > Build Settings > Android > Switch Platform`.
