@@ -1,204 +1,197 @@
-using System;
+// CharacterCreationFlow.cs – Dynamic wheel configuration matching Python get_current_wheel_config()
+// Implements: base wheels, dynamic sub-wheel insertion, magic affinities, territory affinities, spell map
 using System.Collections.Generic;
 using System.Linq;
 using DarkWheel.Core;
 
 namespace DarkWheel.Flow
 {
-    public class CharacterCreationFlow
+    public static class CharacterCreationFlow
     {
-        private readonly DataRoot _data;
-
-        public CharacterCreationFlow(DataRoot data)
+        // Base wheel order (before dynamic insertion)
+        static readonly string[] BaseWheels =
         {
-            _data = data;
-        }
-
-        public IReadOnlyList<string> WheelOrder => new[]
-        {
-            "Race", "Archetype", "Class", "Gender", "Age", "Height", "Alignment", "Place", "MagicType", "Skill", "Personality"
+            "Race", "Gender", "Age", "Archetype", "Class", "Alignment",
+            "Strength", "Agility", "Durability", "Intelligence", "Charisma",
+            "Weapon", "Power Count", "Magic Count", "Skill Count", "Territory", "Items Count"
         };
 
-        public WheelDefinition BuildWheel(string wheelId, GameState state)
+        /// <summary>Build the full wheel config list, inserting dynamic sub-wheels
+        /// based on current selections (Power Count, Magic Count, Skill Count, Items Count, Weapon).</summary>
+        public static List<string> GetCurrentWheelConfig(GameState state)
         {
-            return wheelId switch
-            {
-                "Race" => BuildFromSimple("Race", _data.races),
-                "Archetype" => BuildFromSimple("Archetype", _data.archetypes),
-                "Class" => BuildClassWheel(state),
-                "Gender" => BuildFromSimple("Gender", _data.genders),
-                "Age" => BuildAgeWheel(state),
-                "Height" => BuildHeightWheel(state),
-                "Alignment" => BuildFromSimple("Alignment", _data.alignments),
-                "Place" => BuildFromSimple("Place", _data.places),
-                "MagicType" => BuildFromSimple("MagicType", _data.magic_types),
-                "Skill" => BuildFromSimple("Skill", _data.skills),
-                "Personality" => BuildFromSimple("Personality", _data.personality_traits),
-                _ => new WheelDefinition { Id = wheelId }
-            };
-        }
+            var config = new List<string>();
 
-        private static WheelDefinition BuildFromSimple(string wheelId, List<NamedWeightedOption> list)
-        {
-            var wheel = new WheelDefinition { Id = wheelId };
-            if (list == null)
+            foreach (var wheel in BaseWheels)
             {
-                return wheel;
-            }
+                config.Add(wheel);
 
-            foreach (var item in list)
-            {
-                wheel.Options.Add(new WheelOption
+                switch (wheel)
                 {
-                    Id = item.name,
-                    Label = item.name,
-                    Weight = Math.Max(1, item.weight),
-                    Description = item.desc,
-                    IsAvailable = _ => true
-                });
-            }
-
-            return wheel;
-        }
-
-        private WheelDefinition BuildClassWheel(GameState state)
-        {
-            var wheel = new WheelDefinition { Id = "Class" };
-            var selectedArchetype = state.GetSelection("Archetype");
-            var fallback = _data.classes ?? new List<NamedWeightedOption>();
-
-            if (string.IsNullOrEmpty(selectedArchetype))
-            {
-                foreach (var item in fallback)
-                {
-                    wheel.Options.Add(ToOption(item));
-                }
-
-                return wheel;
-            }
-
-            var archetype = _data.archetypes?.FirstOrDefault(a => string.Equals(a.name, selectedArchetype, StringComparison.OrdinalIgnoreCase));
-            var allowedClasses = archetype?.classes ?? Array.Empty<string>();
-
-            if (allowedClasses.Length == 0)
-            {
-                foreach (var item in fallback)
-                {
-                    wheel.Options.Add(ToOption(item));
-                }
-
-                return wheel;
-            }
-
-            foreach (var className in allowedClasses)
-            {
-                wheel.Options.Add(new WheelOption
-                {
-                    Id = className,
-                    Label = className,
-                    Weight = 1,
-                    Description = $"Clase derivada de {selectedArchetype}",
-                    IsAvailable = _ => true
-                });
-            }
-
-            return wheel;
-        }
-
-        private WheelDefinition BuildAgeWheel(GameState state)
-        {
-            var selectedRace = state.GetSelection("Race");
-            if (!string.IsNullOrWhiteSpace(selectedRace))
-            {
-                var race = _data.races?.FirstOrDefault(r => string.Equals(r.name, selectedRace, StringComparison.OrdinalIgnoreCase));
-                var ageRange = race?.age_range;
-                if (ageRange != null && ageRange.max > ageRange.min)
-                {
-                    var raceWheel = new WheelDefinition { Id = "Age" };
-                    var span = Math.Max(1, ageRange.max - ageRange.min);
-                    var step = Math.Max(1, span / 4);
-
-                    var segmentStart = ageRange.min;
-                    while (segmentStart <= ageRange.max)
+                    case "Weapon":
                     {
-                        var segmentEnd = Math.Min(ageRange.max, segmentStart + step - 1);
-                        raceWheel.Options.Add(new WheelOption
-                        {
-                            Id = $"{segmentStart}-{segmentEnd}",
-                            Label = $"{segmentStart}-{segmentEnd}",
-                            Weight = 1,
-                            IsAvailable = _ => true
-                        });
-                        segmentStart += step;
+                        string weapon = state.Selections.GetValueOrDefault("Weapon", "None");
+                        if (weapon != "None") config.Add("Weapon Mastery");
+                        break;
                     }
-
-                    if (ageRange.immortal_chance > 0f)
+                    case "Power Count":
                     {
-                        raceWheel.Options.Add(new WheelOption
+                        int count = ParseCount(state.Selections.GetValueOrDefault("Power Count", "0 (None)"));
+                        for (int i = 1; i <= count; i++)
                         {
-                            Id = "Immortal",
-                            Label = "Immortal",
-                            Weight = Math.Max(1, (int)Math.Round(ageRange.immortal_chance * 100f)),
-                            IsAvailable = _ => true
-                        });
+                            config.Add($"Power {i}");
+                            config.Add($"Power Mastery {i}");
+                        }
+                        break;
                     }
-
-                    return raceWheel;
-                }
-            }
-
-            var configured = _data.age_brackets ?? _data.ages;
-            if (configured != null && configured.Count > 0)
-            {
-                return BuildFromSimple("Age", configured);
-            }
-
-            var wheel = new WheelDefinition { Id = "Age" };
-            wheel.Options.Add(new WheelOption { Id = "Young Adult", Label = "Young Adult", Weight = 40, IsAvailable = _ => true });
-            wheel.Options.Add(new WheelOption { Id = "Adult", Label = "Adult", Weight = 35, IsAvailable = _ => true });
-            wheel.Options.Add(new WheelOption { Id = "Elder", Label = "Elder", Weight = 20, IsAvailable = _ => true });
-            wheel.Options.Add(new WheelOption { Id = "Immortal", Label = "Immortal", Weight = 5, IsAvailable = _ => true });
-            return wheel;
-        }
-
-        private WheelDefinition BuildHeightWheel(GameState state)
-        {
-            var wheel = new WheelDefinition { Id = "Height" };
-            var selectedRace = state.GetSelection("Race");
-            var race = _data.races?.FirstOrDefault(r => string.Equals(r.name, selectedRace, StringComparison.OrdinalIgnoreCase));
-
-            if (race?.height_options != null && race.height_options.Count > 0)
-            {
-                foreach (var option in race.height_options)
-                {
-                    wheel.Options.Add(new WheelOption
+                    case "Magic Count":
                     {
-                        Id = option.name,
-                        Label = option.name,
-                        Weight = Math.Max(1, option.weight),
-                        IsAvailable = _ => true
-                    });
+                        int count = ParseCount(state.Selections.GetValueOrDefault("Magic Count", "0 (None)"));
+                        for (int i = 1; i <= count; i++)
+                        {
+                            config.Add($"Magic Type {i}");
+                            config.Add($"Spells {i}");
+                            config.Add($"Magic Skill {i}");
+                        }
+                        break;
+                    }
+                    case "Skill Count":
+                    {
+                        int count = ParseCount(state.Selections.GetValueOrDefault("Skill Count", "0 (None)"));
+                        for (int i = 1; i <= count; i++)
+                        {
+                            config.Add($"Skill {i}");
+                            config.Add($"Skill Mastery {i}");
+                        }
+                        if (count > 0) config.Add("Skill Efficiency");
+                        break;
+                    }
+                    case "Items Count":
+                    {
+                        int count = ParseCount(state.Selections.GetValueOrDefault("Items Count", "0 (None)"));
+                        for (int i = 1; i <= count; i++)
+                            config.Add($"Item {i}");
+                        break;
+                    }
                 }
+            }
+            return config;
+        }
 
-                return wheel;
+        static int ParseCount(string val)
+        {
+            if (string.IsNullOrEmpty(val)) return 0;
+            var parts = val.Split(' ');
+            return int.TryParse(parts[0], out int n) ? n : 0;
+        }
+
+        // ── Magic affinities (archetype/class/race → magic type weight multipliers) ──
+
+        public static Dictionary<string, float> BuildMagicAffinities(string archetype, string charClass, string race)
+        {
+            var a = new Dictionary<string, float>();
+
+            // Archetype
+            switch (archetype)
+            {
+                case "Mage":   a["Arcane"] = 3f; a["Divine"] = 0.5f; a["Shadow"] = 1.5f; break;
+                case "Priest": a["Divine"] = 3f; a["Nature"] = 2f; a["Arcane"] = 0.5f; break;
+                case "Druid":  a["Nature"] = 3f; a["Earth"] = 2f; a["Water"] = 1.5f; break;
+                case "Rogue":  a["Shadow"] = 2.5f; a["Blood"] = 1.5f; break;
+                case "Warrior":a["Fire"] = 1.5f; a["Lightning"] = 1.5f; a["Arcane"] = 0.3f; break;
+                case "Hunter": a["Nature"] = 2f; a["Fire"] = 1.5f; break;
+                case "Bard":   a["Arcane"] = 2f; a["Divine"] = 1.5f; break;
             }
 
-            wheel.Options.Add(new WheelOption { Id = "1.60 m", Label = "1.60 m", Weight = 30, IsAvailable = _ => true });
-            wheel.Options.Add(new WheelOption { Id = "1.75 m", Label = "1.75 m", Weight = 50, IsAvailable = _ => true });
-            wheel.Options.Add(new WheelOption { Id = "1.90 m", Label = "1.90 m", Weight = 20, IsAvailable = _ => true });
-            return wheel;
+            // Race
+            switch (race)
+            {
+                case "Vampire":  a["Blood"] = 3f; a["Shadow"] = 2.5f; break;
+                case "Werewolf": a["Blood"] = 2f; a["Nature"] = 1.5f; break;
+                case "Demon":    a["Infernal"] = 3f; a["Blood"] = 2f; a["Shadow"] = 1.5f; break;
+                case "Dark Elf": a["Shadow"] = 2.5f; a["Arcane"] = 2f; break;
+                case "Elf":      a["Arcane"] = 2f; a["Nature"] = 2f; break;
+            }
+
+            // Default 1.0 for all magic types
+            foreach (var m in new[] { "Arcane", "Divine", "Nature", "Blood", "Shadow", "Infernal",
+                                       "Fire", "Water", "Earth", "Air", "Lightning", "Ice" })
+                if (!a.ContainsKey(m)) a[m] = 1f;
+
+            return a;
         }
 
-        private static WheelOption ToOption(NamedWeightedOption item)
+        // ── Territory affinities ──
+
+        public static Dictionary<string, float> BuildTerritoryAffinities(string race, string charClass, string alignment)
         {
-            return new WheelOption
+            var a = new Dictionary<string, float>();
+
+            // Race
+            switch (race)
             {
-                Id = item.name,
-                Label = item.name,
-                Weight = Math.Max(1, item.weight),
-                Description = item.desc,
-                IsAvailable = _ => true
-            };
+                case "Elf":     a["Elven Forest"] = 3f; a["Human City (Good Factions)"] = 2f; break;
+                case "Dark Elf":a["Elven Forest"] = 3f; a["Outlands"] = 2.5f; break;
+                case "Dwarf":   a["Dwarven Hold"] = 3f; break;
+                case "Orc":     a["Human Slums"] = 2.5f; a["Outlands"] = 2f; break;
+                case "Vampire": case "Werewolf": case "Demon":
+                    a["Outlands"] = 3f; a["Human Slums"] = 2f; break;
+                case "Gnome":   a["Human City (Good Factions)"] = 2.5f; break;
+            }
+
+            // Class
+            switch (charClass)
+            {
+                case "Thief":   a["Human City (Good Factions)"] = 2.5f; a["Elven Forest"] = 1.5f; break;
+                case "Knight":  a["Dwarven Hold"] = 2.5f; a["Human City (Good Factions)"] = 1.5f; break;
+                case "Cleric": case "Priest":
+                    a["Human City (Good Factions)"] = 3f; a["Dwarven Hold"] = 2f; break;
+                case "Mage": case "Sorcerer": case "Enchanter":
+                    a["Outlands"] = 3f; a["Human City (Good Factions)"] = 1.5f; break;
+                case "Beast Hunter":
+                    a["Elven Forest"] = 2.5f; a["Human Slums"] = 2f; break;
+            }
+
+            // Alignment
+            if (alignment != null && alignment.Contains("Good"))
+            {
+                a.TryAdd("Human City (Good Factions)", 2f);
+                a.TryAdd("Dwarven Hold", 1.5f);
+            }
+            else if (alignment != null && alignment.Contains("Evil"))
+            {
+                a.TryAdd("Outlands", 2.5f);
+                a.TryAdd("Human Slums", 2f);
+            }
+
+            // Default 1.0
+            foreach (var t in new[] { "Elven Forest", "Human City (Good Factions)", "Dwarven Hold", "Human Slums", "Outlands" })
+                if (!a.ContainsKey(t)) a[t] = 1f;
+
+            return a;
         }
+
+        // ── Spell → magic type map ──
+
+        public static readonly Dictionary<string, string[]> SpellMagicMap = new()
+        {
+            ["Chain Lightning"]   = new[] { "Lightning", "Arcane" },
+            ["Frost Nova"]        = new[] { "Ice", "Arcane" },
+            ["Arcane Missile"]    = new[] { "Arcane" },
+            ["Shadow Veil"]       = new[] { "Shadow" },
+            ["Curse of Weakness"] = new[] { "Shadow", "Blood" },
+            ["Sanctuary"]         = new[] { "Divine" },
+            ["Wind Walk"]         = new[] { "Air", "Divine" },
+            ["Earthquake"]        = new[] { "Earth", "Nature" },
+            ["Fireball"]          = new[] { "Fire", "Arcane" },
+            ["Dark Flame"]        = new[] { "Infernal", "Shadow" },
+            ["Nature Blessing"]   = new[] { "Nature", "Divine" },
+            ["Beast Call"]        = new[] { "Nature" },
+            ["Blood Curse"]       = new[] { "Blood" },
+            ["Blood Drain"]       = new[] { "Blood", "Infernal" },
+        };
+
+        // ── Magical archetypes (for Magic Count weight boosting) ──
+        public static readonly HashSet<string> MagicalArchetypes = new() { "Mage", "Priest", "Druid" };
     }
 }

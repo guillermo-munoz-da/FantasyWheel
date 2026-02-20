@@ -1,38 +1,57 @@
-using System;
+// WeightedSelector.cs – Generic weighted random picker matching Python weighted_choice
 using System.Collections.Generic;
-using System.Linq;
+using UnityEngine;
 
 namespace DarkWheel.Core
 {
     public static class WeightedSelector
     {
-        public static T Pick<T>(IReadOnlyList<T> options, Func<T, int> weightSelector, Random random)
+        /// <summary>Pick a random index from a list of weights.</summary>
+        public static int Pick(IReadOnlyList<float> weights)
         {
-            if (options == null || options.Count == 0)
+            float total = 0f;
+            for (int i = 0; i < weights.Count; i++) total += Mathf.Max(0f, weights[i]);
+            if (total <= 0f) return 0;
+            float r = Random.Range(0f, total);
+            float upto = 0f;
+            for (int i = 0; i < weights.Count; i++)
             {
-                return default;
+                upto += Mathf.Max(0f, weights[i]);
+                if (upto >= r) return i;
             }
+            return weights.Count - 1;
+        }
 
-            var weighted = options.Where(x => weightSelector(x) > 0).ToList();
-            if (weighted.Count == 0)
+        /// <summary>Pick from WheelOption list.</summary>
+        public static int Pick(IReadOnlyList<WheelOption> options)
+        {
+            float total = 0f;
+            for (int i = 0; i < options.Count; i++) total += Mathf.Max(0f, options[i].Weight);
+            if (total <= 0f) return 0;
+            float r = Random.Range(0f, total);
+            float upto = 0f;
+            for (int i = 0; i < options.Count; i++)
             {
-                return default;
+                upto += Mathf.Max(0f, options[i].Weight);
+                if (upto >= r) return i;
             }
+            return options.Count - 1;
+        }
 
-            var total = weighted.Sum(weightSelector);
-            var roll = random.Next(0, total);
-            var cumulative = 0;
-
-            foreach (var option in weighted)
+        /// <summary>Pick from a list of (name, weight) tuples.</summary>
+        public static int Pick(IReadOnlyList<(string name, float weight)> items)
+        {
+            float total = 0f;
+            for (int i = 0; i < items.Count; i++) total += Mathf.Max(0f, items[i].weight);
+            if (total <= 0f) return 0;
+            float r = Random.Range(0f, total);
+            float upto = 0f;
+            for (int i = 0; i < items.Count; i++)
             {
-                cumulative += weightSelector(option);
-                if (roll < cumulative)
-                {
-                    return option;
-                }
+                upto += Mathf.Max(0f, items[i].weight);
+                if (upto >= r) return i;
             }
-
-            return weighted[weighted.Count - 1];
+            return items.Count - 1;
         }
     }
 }

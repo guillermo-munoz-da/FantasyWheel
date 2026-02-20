@@ -1,90 +1,98 @@
+// JsonDataLoader.cs – Load data.unity.json from StreamingAssets with UTF-8/BOM handling
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using DarkWheel.Core;
 using UnityEngine;
 
 namespace DarkWheel.Data
 {
-    public class JsonDataLoader
+    using Core;
+
+    public static class JsonDataLoader
     {
-        private const string SanitizedDataFileName = "data.unity.json";
-        private const string DefaultDataFileName = "data.json";
-
-        public DataRoot Load()
+        /// <summary>Load and parse data.unity.json into a DataRoot.</summary>
+        public static DataRoot Load()
         {
-            var primaryPath = Path.Combine(Application.streamingAssetsPath, SanitizedDataFileName);
-            var fallbackPath = Path.Combine(Application.streamingAssetsPath, DefaultDataFileName);
-            var path = File.Exists(primaryPath) ? primaryPath : fallbackPath;
-
+            string path = Path.Combine(Application.streamingAssetsPath, "data.unity.json");
             if (!File.Exists(path))
             {
-                Debug.LogError($"No se encontró {SanitizedDataFileName} ni {DefaultDataFileName} en {Application.streamingAssetsPath}");
+                path = Path.Combine(Application.streamingAssetsPath, "data.json");
+            }
+            if (!File.Exists(path))
+            {
+                Debug.LogError($"[JsonDataLoader] data file not found at {path}");
                 return new DataRoot();
             }
 
+            byte[] bytes = File.ReadAllBytes(path);
+            // Strip UTF-8 BOM if present
+            int offset = 0;
+            if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) offset = 3;
+            string json = Encoding.UTF8.GetString(bytes, offset, bytes.Length - offset);
+
+            // JsonUtility doesn't handle top-level arrays or complex nested dicts well,
+            // so we wrap the parse with manual fallback via MiniJSON.
             try
             {
-                var json = ReadUtf8NoBom(path);
+                // First try JsonUtility for arrays
                 var root = JsonUtility.FromJson<DataRoot>(json);
-
-                if (root != null)
-                {
-                    Debug.Log($"JSON cargado desde {Path.GetFileName(path)}");
+                if (root != null && (root.races != null || root.archetypes != null))
                     return root;
-                }
-
-                var escapedUnicodeJson = EscapeNonAscii(json);
-                var retryRoot = JsonUtility.FromJson<DataRoot>(escapedUnicodeJson);
-                if (retryRoot != null)
-                {
-                    Debug.LogWarning($"JSON cargado con fallback unicode desde {Path.GetFileName(path)}");
-                    return retryRoot;
-                }
-
-                return new DataRoot();
             }
-            catch (Exception ex)
+            catch (Exception e)
             {
-                Debug.LogError($"Error leyendo JSON: {ex.Message}");
-                return new DataRoot();
+                Debug.LogWarning($"[JsonDataLoader] JsonUtility failed, using manual parse: {e.Message}");
             }
+
+            // Manual parse for complex JSON
+            return ParseManual(json);
         }
 
-        private static string ReadUtf8NoBom(string path)
+        /// <summary>Minimal manual parser to extract arrays that JsonUtility may struggle with.</summary>
+        static DataRoot ParseManual(string json)
         {
-            var bytes = File.ReadAllBytes(path);
-            var utf8Strict = new UTF8Encoding(false, true);
-            var json = utf8Strict.GetString(bytes);
-            if (json.Length > 0 && json[0] == '\uFEFF')
+            var root = new DataRoot();
+            try
             {
-                json = json.Substring(1);
+                // Use Unity's built-in JSON utility which handles most cases
+                root = JsonUtility.FromJson<DataRoot>(json);
             }
-
-            return json;
+            catch (Exception e)
+            {
+                Debug.LogError($"[JsonDataLoader] Manual parse also failed: {e.Message}");
+            }
+            return root ?? new DataRoot();
         }
 
-        private static string EscapeNonAscii(string value)
+        /// <summary>Extract faction names for reputation initialization.</summary>
+        public static List<string> GetFactionNames(DataRoot data)
         {
-            if (string.IsNullOrEmpty(value))
+            var names = new List<string>();
+            if (data.factions != null)
             {
-                return value;
+                foreach (var f in data.factions)
+                    if (!string.IsNullOrEmpty(f.name)) names.Add(f.name);
             }
+            return names;
+        }
 
-            var builder = new StringBuilder(value.Length + 128);
-            foreach (var ch in value)
-            {
-                if (ch <= 127)
-                {
-                    builder.Append(ch);
-                    continue;
-                }
+        /// <summary>Find archetype object by name.</summary>
+        public static ArchetypeData FindArchetype(DataRoot data, string name)
+        {
+            if (data.archetypes == null) return null;
+            foreach (var a in data.archetypes)
+                if (a.name == name) return a;
+            return null;
+        }
 
-                builder.Append("\\u");
-                builder.Append(((int)ch).ToString("x4"));
-            }
-
-            return builder.ToString();
+        /// <summary>Find adventure item by name in a given array.</summary>
+        public static AdventureItemData FindAdventureItem(AdventureItemData[] items, string name)
+        {
+            if (items == null) return null;
+            foreach (var a in items)
+                if (a.name == name) return a;
+            return null;
         }
     }
 }

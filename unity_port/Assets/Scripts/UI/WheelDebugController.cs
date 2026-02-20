@@ -1,195 +1,226 @@
+// WheelDebugController.cs – TMP-based debug controller for the circular wheel.
+// Reads from GameBootstrap, renders segments as a list, handles spin simulation.
 using System.Collections.Generic;
-using System.Text;
 using DarkWheel.Bootstrap;
 using DarkWheel.Core;
+using DarkWheel.Flow;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace DarkWheel.UI
 {
+    /// <summary>
+    /// Minimal debug UI that drives the game loop via GameBootstrap.
+    /// Attach to a Canvas with children built by DebugUiAutoBuilder or manually.
+    /// </summary>
     public class WheelDebugController : MonoBehaviour
     {
-        [Header("UI")]
-        [SerializeField] private TMP_Text currentWheelText;
-        [SerializeField] private TMP_Text currentResultText;
-        [SerializeField] private TMP_Text summaryText;
+        [Header("UI References")]
+        [SerializeField] TMP_Text _titleLabel;
+        [SerializeField] TMP_Text _contextLabel;
+        [SerializeField] TMP_Text _resultLabel;
+        [SerializeField] TMP_Text _charSheetText;
+        [SerializeField] TMP_Text _logText;
+        [SerializeField] Button _spinButton;
+        [SerializeField] Button _endRunButton;
+        [SerializeField] Button _newGameButton;
+        [SerializeField] Transform _segmentListParent;
+        [SerializeField] GameObject _segmentPrefab;
 
-        private int _wheelIndex;
-        private IReadOnlyList<string> _order;
-        private int _adventureStage;
+        GameBootstrap _boot;
+        List<WheelSegment> _currentSegments;
 
-        public void BindTexts(TMP_Text wheelText, TMP_Text resultText, TMP_Text summary)
+        void Start()
         {
-            currentWheelText = wheelText;
-            currentResultText = resultText;
-            summaryText = summary;
-        }
-
-        private void Start()
-        {
-            if (GameBootstrap.Instance == null)
+            _boot = GameBootstrap.Instance;
+            if (_boot == null)
             {
-                Debug.LogError("GameBootstrap no encontrado en escena.");
-                enabled = false;
+                Debug.LogError("[WheelDebugController] GameBootstrap.Instance is null. Place GameBootstrap in your scene.");
                 return;
             }
 
-            if (currentWheelText == null || currentResultText == null || summaryText == null)
+            _spinButton?.onClick.AddListener(OnSpinClicked);
+            _endRunButton?.onClick.AddListener(OnEndRunClicked);
+            _newGameButton?.onClick.AddListener(OnNewGameClicked);
+
+            // Wire adventure callbacks
+            WireAdventureCallbacks();
+        }
+
+        void Update()
+        {
+            if (_boot == null || !_boot.IsReady) return;
+
+            // Refresh wheel if changed (lazy refresh)
+            if (_currentSegments == null)
+                RefreshWheel();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  REFRESH
+        // ═══════════════════════════════════════════════════════════
+
+        void RefreshWheel()
+        {
+            string wheelName = _boot.GetCurrentWheelName();
+            if (wheelName == null)
             {
-                Debug.LogError("WheelDebugController: faltan referencias TMP_Text en el inspector o en auto-setup.");
-                enabled = false;
+                if (_titleLabel) _titleLabel.text = "Done";
                 return;
             }
 
-            _order = GameBootstrap.Instance.CharacterFlow.WheelOrder;
-            _wheelIndex = 0;
-            _adventureStage = 0;
-            RefreshTexts("Listo para girar");
+            _currentSegments = _boot.GetCurrentSegments();
+            if (_titleLabel) _titleLabel.text = _boot.IsCreating ? $"Creacion: {wheelName}" : wheelName;
+            if (_contextLabel) _contextLabel.text = WheelEngine.GetWheelContext(wheelName, _boot.State);
+
+            RenderSegmentList();
+            RefreshCharSheet();
         }
 
-        public void SpinCurrentWheel()
+        void RenderSegmentList()
         {
-            if (_wheelIndex >= _order.Count)
+            if (_segmentListParent == null || _segmentPrefab == null) return;
+
+            // Clear old entries
+            foreach (Transform child in _segmentListParent)
+                Destroy(child.gameObject);
+
+            if (_currentSegments == null) return;
+
+            float totalWeight = 0f;
+            foreach (var s in _currentSegments) totalWeight += s.Weight;
+
+            foreach (var seg in _currentSegments)
             {
-                currentResultText.text = "Creación completa";
-                return;
-            }
-
-            var wheelId = _order[_wheelIndex];
-            var state = GameBootstrap.Instance.State;
-            var wheel = GameBootstrap.Instance.CharacterFlow.BuildWheel(wheelId, state);
-            var spin = GameBootstrap.Instance.WheelEngine.Spin(wheel, state);
-
-            if (spin.Option == null)
-            {
-                currentResultText.text = $"Sin opciones para {wheelId}";
-                return;
-            }
-
-            state.SetSelection(wheelId, spin.Option.Label);
-            state.AddLog($"{wheelId}: {spin.Option.Label}");
-
-            currentResultText.text = $"{wheelId} -> {spin.Option.Label}";
-            _wheelIndex++;
-            RefreshTexts(currentResultText.text);
-        }
-
-        public void ResetFlow()
-        {
-            var oldState = GameBootstrap.Instance.State;
-            oldState.Selections.Clear();
-            oldState.HistoryLog.Clear();
-            _wheelIndex = 0;
-            _adventureStage = 0;
-            RefreshTexts("Reseteado");
-        }
-
-        public void SaveState()
-        {
-            GameBootstrap.Instance.SaveService.Save(GameBootstrap.Instance.State);
-            RefreshTexts("Partida guardada");
-        }
-
-        public void LoadState()
-        {
-            var loaded = GameBootstrap.Instance.SaveService.TryLoad(GameBootstrap.Instance.State);
-            if (loaded)
-            {
-                _wheelIndex = GameBootstrap.Instance.State.Selections.Count;
-                if (_wheelIndex > _order.Count)
+                var go = Instantiate(_segmentPrefab, _segmentListParent);
+                var tmp = go.GetComponentInChildren<TMP_Text>();
+                if (tmp)
                 {
-                    _wheelIndex = _order.Count;
+                    float pct = totalWeight > 0 ? seg.Weight / totalWeight * 100f : 0f;
+                    tmp.text = $"{seg.Name}  ({pct:F1}%)";
                 }
             }
-            RefreshTexts(loaded ? "Partida cargada" : "No hay guardado");
         }
 
-        public void SimulateRewardedAd()
+        void RefreshCharSheet()
         {
-            GameBootstrap.Instance.AdService.ShowRewarded("debug.reroll", out var rewardGranted);
-            RefreshTexts(rewardGranted ? "Reward concedido" : "Reward denegado");
+            if (_charSheetText == null || _boot.State == null) return;
+
+            var sb = new System.Text.StringBuilder();
+            foreach (var kv in _boot.State.Selections)
+            {
+                if (kv.Key.StartsWith("_")) continue; // hide internal keys
+                sb.AppendLine($"{kv.Key}: {kv.Value}");
+            }
+            sb.AppendLine($"Gold: {_boot.State.Gold}");
+
+            if (_boot.State.Conditions.Count > 0)
+            {
+                sb.AppendLine("\nConditions:");
+                foreach (var c in _boot.State.Conditions) sb.AppendLine($"  - {c}");
+            }
+
+            if (_boot.State.Titles.Count > 0)
+            {
+                sb.AppendLine("\nTitles:");
+                foreach (var t in _boot.State.Titles) sb.AppendLine($"  * {t}");
+            }
+
+            _charSheetText.text = sb.ToString();
         }
 
-        public void SpinAdventureSlice()
+        void RefreshLog()
         {
-            var state = GameBootstrap.Instance.State;
-            if (_adventureStage <= 0)
-            {
-                var activityWheel = GameBootstrap.Instance.AdventureFlow.BuildActivityWheel();
-                var activity = GameBootstrap.Instance.WheelEngine.Spin(activityWheel, state);
-                if (activity.Option == null)
-                {
-                    RefreshTexts("No hay actividades de aventura disponibles");
-                    return;
-                }
-
-                state.SetSelection("AdventureActivity", activity.Option.Label);
-                state.AddLog($"Adventure Activity: {activity.Option.Label}");
-                _adventureStage = 1;
-                RefreshTexts($"Aventura[1/3] Activity -> {activity.Option.Label}");
-                return;
-            }
-
-            if (_adventureStage == 1)
-            {
-                var selectedActivity = state.GetSelection("AdventureActivity");
-                var eventWheel = GameBootstrap.Instance.AdventureFlow.BuildEventWheel(selectedActivity);
-                var ev = GameBootstrap.Instance.WheelEngine.Spin(eventWheel, state);
-                if (ev.Option == null)
-                {
-                    RefreshTexts("No hay eventos de aventura disponibles");
-                    return;
-                }
-
-                state.SetSelection("AdventureEvent", ev.Option.Label);
-                state.AddLog($"Adventure Event: {ev.Option.Label}");
-                _adventureStage = 2;
-                RefreshTexts($"Aventura[2/3] Event -> {ev.Option.Label}");
-                return;
-            }
-
-            var activitySelection = state.GetSelection("AdventureActivity");
-            var eventSelection = state.GetSelection("AdventureEvent");
-            var actionWheel = GameBootstrap.Instance.AdventureFlow.BuildActionWheel(activitySelection, eventSelection);
-            var action = GameBootstrap.Instance.WheelEngine.Spin(actionWheel, state);
-            if (action.Option == null)
-            {
-                RefreshTexts("No hay acciones de aventura disponibles");
-                return;
-            }
-
-            state.SetSelection("AdventureAction", action.Option.Label);
-            state.AddLog($"Adventure Action: {action.Option.Label}");
-            _adventureStage = 0;
-            RefreshTexts($"Aventura[3/3] Action -> {action.Option.Label}. Siguiente click inicia nueva aventura.");
+            if (_logText == null || _boot.State == null) return;
+            _logText.text = string.Join("\n", _boot.State.AdventureLog);
         }
 
-        private void RefreshTexts(string status)
+        // ═══════════════════════════════════════════════════════════
+        //  SPIN
+        // ═══════════════════════════════════════════════════════════
+
+        void OnSpinClicked()
         {
-            if (_wheelIndex >= _order.Count)
+            if (_currentSegments == null || _currentSegments.Count == 0) return;
+
+            // Weighted random pick
+            float[] weights = new float[_currentSegments.Count];
+            for (int i = 0; i < _currentSegments.Count; i++) weights[i] = _currentSegments[i].Weight;
+            int idx = WeightedSelector.Pick(weights);
+
+            var selected = _currentSegments[idx];
+            if (_resultLabel) _resultLabel.text = $">> {selected.Name}";
+
+            // Process
+            if (_boot.IsCreating)
             {
-                currentWheelText.text = "Current Wheel: FIN";
+                _boot.ProcessSpinResult(selected.Name);
+                WireAdventureCallbacks(); // in case adventure just started
             }
             else
             {
-                currentWheelText.text = $"Current Wheel: {_order[_wheelIndex]}";
+                _boot.Adventure?.HandleSpinResult(selected.Name, selected.ChainOptionData);
             }
 
-            if (!string.IsNullOrWhiteSpace(status))
+            _currentSegments = null; // force refresh on next Update
+            RefreshLog();
+        }
+
+        void OnEndRunClicked()
+        {
+            _boot.Adventure?.EndRunManual();
+        }
+
+        void OnNewGameClicked()
+        {
+            _boot.NewGame();
+            _currentSegments = null;
+            if (_resultLabel) _resultLabel.text = "";
+            if (_logText) _logText.text = "";
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  ADVENTURE CALLBACKS
+        // ═══════════════════════════════════════════════════════════
+
+        void WireAdventureCallbacks()
+        {
+            if (_boot.Adventure == null) return;
+
+            _boot.Adventure.OnShowWheel = (title, context, segments) =>
             {
-                currentResultText.text = status;
-            }
+                if (_titleLabel) _titleLabel.text = title;
+                if (_contextLabel) _contextLabel.text = context;
+                _currentSegments = segments;
+                RenderSegmentList();
+                RefreshCharSheet();
+            };
 
-            var state = GameBootstrap.Instance.State;
-            var builder = new StringBuilder();
-            builder.AppendLine("Character Summary");
-
-            foreach (var entry in state.Selections)
+            _boot.Adventure.OnEndRun = (reason, title, msg) =>
             {
-                builder.AppendLine($"- {entry.Key}: {entry.Value}");
-            }
+                if (_titleLabel) _titleLabel.text = title;
+                if (_resultLabel) _resultLabel.text = msg;
+                string summary = _boot.Adventure.BuildEndRunSummary();
+                if (_logText) _logText.text = summary;
+                RefreshCharSheet();
+            };
 
-            summaryText.text = builder.ToString();
+            _boot.Adventure.OnShowDecision = (eventName, decision) =>
+            {
+                // In debug mode, auto-pick first option
+                Debug.Log($"[Decision] {eventName}: {decision.Prompt}");
+                if (decision.Options != null && decision.Options.Count > 0)
+                {
+                    _boot.Adventure.OnDecisionMade(decision.Options[0]);
+                }
+            };
+
+            _boot.Adventure.OnStateChanged = () =>
+            {
+                RefreshCharSheet();
+                RefreshLog();
+            };
         }
     }
 }
