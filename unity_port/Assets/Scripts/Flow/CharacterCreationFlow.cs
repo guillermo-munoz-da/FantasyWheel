@@ -9,7 +9,7 @@ namespace DarkWheel.Flow
     public static class CharacterCreationFlow
     {
         // Base wheel order (before dynamic insertion)
-        static readonly string[] BaseWheels =
+        public static readonly string[] BaseWheels =
         {
             "Race", "Gender", "Age", "Archetype", "Class", "Alignment",
             "Strength", "Agility", "Durability", "Intelligence", "Charisma",

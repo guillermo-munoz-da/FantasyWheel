@@ -247,7 +247,7 @@ namespace DarkWheel.Flow
                 // Chain repeat limits
                 if (checkChainLimits && state.CompletedChains.TryGetValue(item.name, out int count))
                 {
-                    if (EventChainData.Limits.TryGetValue(item.name, out var limit))
+                    if (EventChainData.ChainLimits.TryGetValue(item.name, out var limit))
                     {
                         if (limit.Unique && count > 0) continue;
                         if (limit.MaxRepeats >= 0 && count >= limit.MaxRepeats) continue;
@@ -648,7 +648,7 @@ namespace DarkWheel.Flow
 
                 if (state.CompletedChains.TryGetValue(item.name, out int count))
                 {
-                    if (EventChainData.Limits.TryGetValue(item.name, out var limit))
+                    if (EventChainData.ChainLimits.TryGetValue(item.name, out var limit))
                     {
                         if (limit.Unique && count > 0) continue;
                         if (limit.MaxRepeats >= 0 && count >= limit.MaxRepeats) continue;

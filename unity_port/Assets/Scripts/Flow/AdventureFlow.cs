@@ -198,7 +198,7 @@ namespace DarkWheel.Flow
             if (step == 1)
             {
                 // Decision popup?
-                if (EventChainData.Decisions.TryGetValue(selectedName, out var decision))
+                if (EventChainData.AdventureDecisions.TryGetValue(selectedName, out var decision))
                 {
                     OnStateChanged?.Invoke();
                     OnShowDecision?.Invoke(selectedName, decision);
@@ -425,7 +425,7 @@ namespace DarkWheel.Flow
             foreach (var kv in _state.ChainChoices)
             {
                 var titleKey = (chainName, kv.Value);
-                if (EventChainData.Titles.TryGetValue(titleKey, out string newTitle))
+                if (EventChainData.ChainTitles.TryGetValue(titleKey, out string newTitle))
                 {
                     if (!_state.Titles.Contains(newTitle))
                     {

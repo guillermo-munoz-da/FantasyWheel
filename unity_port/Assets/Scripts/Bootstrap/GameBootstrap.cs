@@ -2,6 +2,7 @@
 // wires up CharacterCreationFlow, WheelEngine, and AdventureFlow.
 using System.Collections;
 using DarkWheel.Core;
+using DarkWheel.Data;
 using DarkWheel.Flow;
 using UnityEngine;
 
@@ -37,12 +38,10 @@ namespace DarkWheel.Bootstrap
 
         IEnumerator LoadAndInit()
         {
-            // Load JSON data from StreamingAssets
-            yield return JsonDataLoader.LoadAsync("data.json", root =>
-            {
-                Data = root;
-                _dataLoaded = true;
-            });
+            // Load JSON data from StreamingAssets (synchronous – works on all platforms)
+            Data = JsonDataLoader.Load();
+            _dataLoaded = Data != null;
+            yield return null; // yield once so coroutine completes normally
 
             if (Data == null)
             {
